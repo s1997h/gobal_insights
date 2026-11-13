@@ -1,0 +1,36 @@
+{
+  "video_id": "sleepless-72h",
+  "scenes": [
+    {"id": "s01", "min_sec": 4,
+     "narration": "You decide to skip sleep for three days. Not forever. Just seventy-two hours. By the end, your brain will be doing things you won't notice until they cost you something.",
+     "visual": {"type": "template", "template": "title_card", "props": {"title": "What if you stayed awake for 72 hours?", "subtitle": "Hour by hour"}}},
+    {"id": "s02", "chapter": "The easy hours",
+     "narration": "The first sixteen hours feel normal. You are just a person who is awake. Meanwhile a chemical called adenosine builds up in your brain, and that is the pressure to sleep.",
+     "visual": {"type": "template", "template": "you_reaction", "props": {"mood": "neutral"}},
+     "on_screen_text": "Hour 1 to 16"},
+    {"id": "s03", "chapter": "Hour twenty-four",
+     "narration": "Around hour twenty-four, things change. Studies on sleep loss find that a full day awake can slow your reactions about as much as being over the legal drink-drive limit.",
+     "visual": {"type": "template", "template": "number_counter", "props": {"from": 0, "to": 24, "label": "hours awake"}}},
+    {"id": "s04",
+     "narration": "The pattern is a chain. Less sleep means slower attention. Slower attention means you miss details. Missing details means mistakes, and you are the last person to notice them.",
+     "visual": {"type": "template", "template": "diagram", "props": {"nodes": ["Less sleep", "Slower attention", "Missed details", "Mistakes"]}}},
+    {"id": "s05", "chapter": "Microsleeps",
+     "narration": "Then come microsleeps. Your brain drops out for a few seconds at a time, even with your eyes open. You might read a sentence and have no memory of it. Behind a wheel, those seconds are the dangerous part.",
+     "visual": {"type": "template", "template": "you_reaction", "props": {"mood": "worried"}},
+     "on_screen_text": "Hour 36"},
+    {"id": "s06",
+     "narration": "Here is the trick. What you feel and what your brain is doing drift apart. You feel fine, just a bit tired. Your brain is skipping seconds and judging risk badly.",
+     "visual": {"type": "template", "template": "compare", "props": {
+       "left": {"label": "What you feel", "points": ["Awake", "Fine, just tired"]},
+       "right": {"label": "What your brain does", "points": ["Skips seconds", "Misjudges risk"]}}}},
+    {"id": "s07", "chapter": "Hour seventy-two",
+     "narration": "By hour seventy-two, many people report seeing or hearing things that are not there. Moods swing. Simple tasks feel enormous, and your sense of time stretches and warps.",
+     "visual": {"type": "template", "template": "number_counter", "props": {"from": 0, "to": 72, "label": "hours awake"}}},
+    {"id": "s08", "chapter": "Recovery",
+     "narration": "And then, finally, you sleep. Your brain does not repay every lost hour. It collects the deepest sleep first, and often a couple of long nights is enough to feel like yourself again.",
+     "visual": {"type": "template", "template": "captions_only", "props": {}}},
+    {"id": "s09",
+     "narration": "So the honest answer is this. Three days awake will not break you, but it will quietly change how you think, long before you feel it.",
+     "visual": {"type": "template", "template": "title_card", "props": {"title": "Sleep is not optional", "subtitle": "Your brain notices before you do"}}}
+  ]
+}

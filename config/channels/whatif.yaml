@@ -1,0 +1,15 @@
+id: whatif
+name: "What IF You..."
+style: styles/whatif.yaml
+language: en
+formats: [long, short]
+schedule:
+  timezone: Asia/Kolkata
+  long:  ["Mon 19:00", "Wed 19:00", "Fri 19:00"]   # 3 videos a week in the pilot
+  short: ["Tue 13:00", "Thu 13:00", "Sat 13:00"]   # each Short goes out the day after its long video
+budget: {per_video_usd: 8, per_month_usd: 150}
+# Lean tier: code-rendered templates plus a few AI stills, no AI video clips.
+visuals: {stills: true, hero_clips: false, max_stills_long: 12, max_stills_short: 4}
+destinations:
+  - {platform: youtube,   account: yt_whatif, formats: [long, short]}
+  - {platform: instagram, account: ig_whatif, formats: [short]}

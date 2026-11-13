@@ -1,0 +1,23 @@
+{
+  "video_id": "sleepless-72h-short",
+  "scenes": [
+    {"id": "t01", "min_sec": 3,
+     "narration": "You stay awake for three days. Here is what your brain does to you.",
+     "visual": {"type": "template", "template": "title_card", "props": {"title": "Awake for 72 hours?", "subtitle": "Hour by hour"}}},
+    {"id": "t02",
+     "narration": "Hour twenty-four. Your reactions slow down about as much as if you were over the drink-drive limit.",
+     "visual": {"type": "template", "template": "number_counter", "props": {"from": 0, "to": 24, "label": "hours awake"}}},
+    {"id": "t03",
+     "narration": "Hour thirty-six. Microsleeps begin. Your brain switches off for a few seconds, eyes open, and you never notice.",
+     "visual": {"type": "template", "template": "you_reaction", "props": {"mood": "worried"}}},
+    {"id": "t04",
+     "narration": "Slower focus, missed details, then mistakes. And you are the last to see them.",
+     "visual": {"type": "template", "template": "diagram", "props": {"nodes": ["Slow focus", "Missed details", "Mistakes"]}}},
+    {"id": "t05",
+     "narration": "Hour seventy-two. Some people see or hear things that are not there.",
+     "visual": {"type": "template", "template": "number_counter", "props": {"from": 0, "to": 72, "label": "hours awake"}}},
+    {"id": "t06",
+     "narration": "Then you sleep, and your brain collects the deepest sleep first.",
+     "visual": {"type": "template", "template": "captions_only", "props": {}}}
+  ]
+}

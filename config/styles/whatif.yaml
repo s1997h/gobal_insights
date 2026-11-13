@@ -1,0 +1,31 @@
+# Style bible for "What IF You...". One per channel; never copy it to another channel.
+palette: {bg: "#0B1B33", gold: "#F2B84B", teal: "#2EC4B6", ink: "#F4F6FA"}
+font: Inter
+captions: {max_words_per_line: 4, highlight: gold, position: lower_third}
+# Choose the voice with `pipeline voices`, then put the winner here.
+narrator: {provider: azure, voice: "en-US-AndrewNeural", rate: 1.0, wpm: 150}
+formats:
+  long:  {ratio: "16:9", target_minutes: 9}
+  short: {ratio: "9:16", target_seconds: 55}
+banned_phrases:
+  - "in today's video"
+  - "don't forget to like"
+  - "smash that"
+  - "welcome back"
+  - "hey guys"
+voice_rules: |
+  Second person, present tense: "You open the email at 7:02 a.m."
+  Calm, curious, a little wry. Short sentences. One idea per sentence.
+  Concrete details and numbers beat adjectives. No greeting, no sign-off, no "let's dive in".
+  Explain like a smart friend, never like a lecture. Never address "guys" or "viewers".
+  No real people's names or likeness. No personalised medical, legal or money advice.
+image_suffix: "flat vector illustration, navy background, gold and teal accents, clean simple shapes, no text, no letters, no logos"
+disclosure: "This video uses AI-generated narration and visuals."
+music: {volume: 0.22, tracks: [assets/music/bed_a.mp3, assets/music/bed_b.mp3]}
+story_shapes:
+  - {id: first_24_hours,   name: "First 24 hours",       description: "Walk through the first day hour by hour, from the first minute to the next morning."}
+  - {id: best_vs_worst,    name: "Best case vs worst case", description: "Split the scenario into the best realistic outcome and the worst, then land on the likeliest middle."}
+  - {id: year_by_year,     name: "Year by year",         description: "Jump forward in time: day 1, week 1, month 1, year 1, year 10."}
+  - {id: one_big_choice,   name: "The one big choice",   description: "Everything hinges on one decision early on; show the fork and both branches."}
+  - {id: myth_vs_reality,  name: "Myth vs reality",      description: "State what people expect, then correct each belief with what really happens."}
+  - {id: countdown,        name: "Countdown",            description: "Count down from the moment it starts to the point of no return."}

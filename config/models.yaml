@@ -1,0 +1,12 @@
+# Model names live here, never in code. Swap a provider by changing this file.
+llm:
+  provider: anthropic
+  strong: claude-sonnet-5-5     # script + critic
+  small: claude-haiku-5-5       # topic + package
+  max_tokens: {topic: 3000, script: 16000, critic: 6000, package: 4000}
+tts:
+  provider: azure               # azure | fake
+image:
+  provider: openai              # openai | fake
+  model: gpt-image-1            # VERIFY the current image model name before the first run
+  quality: medium

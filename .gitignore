@@ -1,0 +1,25 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+
+# generated at run time
+runs/
+out/
+cache/
+*.db
+*.db-journal
+
+# secrets: never commit
+client_secret*.json
+token*.json
+
+# node
+node_modules/
+render/out/

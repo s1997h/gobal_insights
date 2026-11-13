@@ -1,0 +1,18 @@
+# USD. The ledger uses these to turn token / character / image counts into dollars.
+# Anthropic rates checked 2026-11-13 at https://platform.claude.com/docs/en/about-claude/pricing
+# (Haiku 5.5 rate is for prompts up to 100K tokens; this pipeline's prompts stay far below that).
+# Cache reads are counted at the full input rate, so the ledger errs high.
+llm:
+  claude-sonnet-5-5: {input_per_mtok: 2.0, output_per_mtok: 10.0}
+  claude-haiku-5-5:  {input_per_mtok: 0.10, output_per_mtok: 0.50}
+# VERIFY the Azure and OpenAI rates below on their pricing pages.
+tts:
+  azure: {usd_per_million_chars: 16.0, free_chars_per_month: 500000}
+image:
+  openai: {usd_per_image: 0.04}
+# Pessimistic per-call estimates used by the cap check *before* a paid call.
+estimates:
+  topic: 0.03
+  script: 0.35
+  critic: 0.20
+  package: 0.05

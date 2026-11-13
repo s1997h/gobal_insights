@@ -1,0 +1,7 @@
+# Rules per platform and format. A platform listed here is a "known platform";
+# when publishers are plugged in, config.py will also check the publisher REGISTRY.
+youtube:
+  long:  {aspect: "16:9", max_sec: null, title_max: 100, desc_max: 5000}
+  short: {aspect: "9:16", max_sec: 60, title_max: 100, desc_max: 5000, tag: "#Shorts"}
+instagram:
+  short: {aspect: "9:16", max_sec: 90, caption_max: 2200, hashtags_max: 30}

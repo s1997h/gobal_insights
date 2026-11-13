@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pipeline"
+version = "0.1.0"
+description = "Multichannel AI video pipeline: topic to ready-to-upload videos (YouTube long + Shorts + Reels)"
+requires-python = ">=3.12"
+dependencies = [
+  "pydantic>=2",
+  "pyyaml",
+  "typer",
+  "httpx",
+  "sqlalchemy>=2",
+  "python-dotenv",
+  "langgraph",
+  "langgraph-checkpoint-sqlite",
+  "anthropic",
+  "azure-cognitiveservices-speech",
+  "numpy",
+  "pillow",
+  "tzdata",
+]
+
+[project.optional-dependencies]
+# Better variety check (local embedding model). The pipeline falls back to a
+# built-in hashing embedder when this is not installed.
+embeddings = ["fastembed"]
+dev = ["ruff", "mypy", "pytest", "types-PyYAML"]
+
+[project.scripts]
+pipeline = "pipeline.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+check_untyped_defs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["slow: renders real video through Remotion (set RUN_RENDER_TESTS=1)"]
