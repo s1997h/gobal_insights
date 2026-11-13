@@ -1,0 +1,50 @@
+# Build the pipeline image, test-render a free offline video inside it, and push it to your
+# Azure Container Registry. Start it from GitHub > Actions > deploy > Run workflow.
+# Needs three repository secrets: ACR_NAME, ACR_USERNAME, ACR_PASSWORD (see docs/DEPLOY-AZURE.md).
+name: deploy
+on:
+  workflow_dispatch:
+    inputs:
+      smoke_test:
+        description: Render a free offline test video inside the image before pushing it
+        type: boolean
+        default: true
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      ACR_NAME: ${{ secrets.ACR_NAME }}
+      TAG: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Check the registry secrets
+        run: |
+          if [ -z "$ACR_NAME" ]; then
+            echo "::error::Add ACR_NAME, ACR_USERNAME and ACR_PASSWORD under Settings > Secrets and variables > Actions. docs/DEPLOY-AZURE.md shows where they come from."
+            exit 1
+          fi
+      - name: Build the image
+        run: docker build -f infra/Dockerfile -t "videopipe:$TAG" .
+      - name: Smoke test (free offline render inside the image)
+        if: ${{ inputs.smoke_test }}
+        run: |
+          mkdir -p work && chmod 777 work
+          docker run --rm -e WORK_DIR=/work -v "$PWD/work:/work" "videopipe:$TAG" run --channel whatif --offline --quick
+          find work/out -name video.mp4 | grep .
+      - name: Push to Azure Container Registry
+        env:
+          ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
+          ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+        run: |
+          echo "$ACR_PASSWORD" | docker login "$ACR_NAME.azurecr.io" -u "$ACR_USERNAME" --password-stdin
+          for t in "$TAG" latest; do
+            docker tag "videopipe:$TAG" "$ACR_NAME.azurecr.io/videopipe:$t"
+            docker push "$ACR_NAME.azurecr.io/videopipe:$t"
+          done
+          {
+            echo "### Pushed \`$ACR_NAME.azurecr.io/videopipe:$TAG\`"
+            echo "First deployment: run \`bash infra/azure/deploy.sh\` again to create the job."
+            echo "Later updates: run \`bash infra/azure/update-image.sh\` to point the job at this image."
+          } >> "$GITHUB_STEP_SUMMARY"

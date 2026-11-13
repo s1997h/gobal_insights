@@ -1,7 +1,7 @@
 # Pipeline image: Python 3.12 + Node 22 + FFmpeg + Chromium deps for Remotion.
 # Build from the repo root:  docker build -f infra/Dockerfile -t videopipe .
-# Run:  docker run --rm --env-file .env -v "$PWD/runs:/app/runs" -v "$PWD/out:/app/out" \
-#         -v "$PWD/data:/app/data" videopipe run --channel whatif --quick
+# Run:  docker run --rm --env-file .env -e WORK_DIR=/work -v "$PWD/work:/work" \
+#         videopipe run --channel whatif --quick
 FROM python:3.12-slim-bookworm
 
 ENV DEBIAN_FRONTEND=noninteractive PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1 \
@@ -35,7 +35,10 @@ COPY prompts/ prompts/
 COPY assets/ assets/
 COPY examples/ examples/
 
-RUN mkdir -p runs out cache data && useradd -m pipe && chown -R pipe /app
+COPY infra/entrypoint.sh /usr/local/bin/entrypoint
+RUN chmod 755 /usr/local/bin/entrypoint \
+    && mkdir -p runs out cache data && useradd -m -u 1000 pipe && chown -R pipe /app
 USER pipe
-ENTRYPOINT ["pipeline"]
+# In Azure, WORK_DIR points at the mounted file share (see docs/DEPLOY-AZURE.md).
+ENTRYPOINT ["entrypoint"]
 CMD ["--help"]

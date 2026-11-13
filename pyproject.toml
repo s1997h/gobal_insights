@@ -17,6 +17,7 @@ dependencies = [
   "langgraph",
   "langgraph-checkpoint-sqlite",
   "anthropic",
+  "openai>=1.60",  # Azure OpenAI / Foundry models via the v1 API
   "azure-cognitiveservices-speech",
   "numpy",
   "pillow",

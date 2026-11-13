@@ -343,8 +343,18 @@ def doctor() -> None:
     typer.echo(
         f"INFO browser: {'PIPELINE_CHROME=' + chrome if chrome else 'Remotion will download its own headless Chrome on first render'}"
     )
+    try:
+        llm_provider = load_config(root).models.llm.provider
+    except ConfigError:
+        llm_provider = "anthropic"
+    typer.echo(f"INFO script model provider: {llm_provider} (llm.provider in config/models.yaml)")
+    llm_vars = (
+        [("AZURE_OPENAI_ENDPOINT", "scripts and critic"), ("AZURE_OPENAI_API_KEY", "scripts and critic")]
+        if llm_provider == "azure_openai"
+        else [("ANTHROPIC_API_KEY", "scripts and critic")]
+    )
     for var, why in [
-        ("ANTHROPIC_API_KEY", "scripts and critic"),
+        *llm_vars,
         ("AZURE_SPEECH_KEY", "voice"),
         ("AZURE_SPEECH_REGION", "voice"),
         ("OPENAI_API_KEY", "AI stills (optional with --no-stills)"),
