@@ -86,3 +86,22 @@ def test_next_slot_without_schedule(project: Path) -> None:
     ch = load_config(project).channel("whatif")
     ch = ch.model_copy(update={"schedule": ch.schedule.model_copy(update={"short": []})})
     assert next_slot(ch, "short", datetime(2026, 1, 1)) is None
+
+
+def test_unknown_llm_provider_fails(project: Path) -> None:
+    path = project / "config" / "models.yaml"
+    data = yaml.safe_load(path.read_text())
+    data["llm"]["provider"] = "mystery"
+    path.write_text(yaml.safe_dump(data))
+    with pytest.raises(ConfigError, match="llm.provider"):
+        load_config(project)
+
+
+def test_provider_without_model_names_fails(project: Path) -> None:
+    path = project / "config" / "models.yaml"
+    data = yaml.safe_load(path.read_text())
+    data["llm"]["provider"] = "azure_openai"
+    del data["llm"]["azure_openai"]
+    path.write_text(yaml.safe_dump(data))
+    with pytest.raises(ConfigError, match="azure_openai"):
+        load_config(project)

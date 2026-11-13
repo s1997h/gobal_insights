@@ -6,6 +6,7 @@ Every call records a CostEvent. FakeLLM produces valid, deterministic output off
 
 from __future__ import annotations
 
+import json
 import os
 import random
 import re
@@ -75,8 +76,9 @@ class AnthropicLLM:
         check: Check | None = None,
         hints: dict[str, Any] | None = None,
     ) -> T:
-        model = self.models.strong if tier == "strong" else self.models.small
-        max_tokens = self.models.max_tokens.get(step, 8000)
+        tiers = self.models.tiers("anthropic")
+        model = tiers.strong if tier == "strong" else tiers.small
+        max_tokens = self.models.budget(step, "anthropic")
         tool = {
             "name": "submit",
             "description": "Return the result",
@@ -118,6 +120,161 @@ class AnthropicLLM:
                             "content": f"Invalid result:\n{last_error}\nFix every item and call submit again with the full result.",
                         }
                     ],
+                },
+            ]
+        raise LLMOutputError(f"{step}: {schema.__name__} still invalid after 3 tries:\n{last_error}")
+
+
+class _Usage:
+    """OpenAI-style usage mapped onto the fields the ledger reads."""
+
+    def __init__(self, usage: Any):
+        self.input_tokens = int(getattr(usage, "prompt_tokens", 0) or 0)
+        # completion_tokens already includes any reasoning tokens, which are billed as output
+        self.output_tokens = int(getattr(usage, "completion_tokens", 0) or 0)
+
+
+def azure_v1_url(endpoint: str) -> str:
+    """https://<resource>.openai.azure.com (or .services.ai.azure.com) -> .../openai/v1/"""
+    e = endpoint.strip().rstrip("/")
+    if e.endswith("/openai/v1"):
+        return e + "/"
+    if e.endswith("/openai"):
+        return e + "/v1/"
+    return e + "/openai/v1/"
+
+
+class AzureOpenAILLM:
+    """A model deployed in Azure AI Foundry, called through the OpenAI-compatible v1 API.
+
+    Works with Azure OpenAI deployments (GPT family) and Foundry models that speak the same
+    chat-completions format. The structured answer is forced through one function, "submit",
+    whose parameters are the Pydantic schema; invalid answers go back to the model at most twice.
+    """
+
+    name = "azure_openai"
+
+    def __init__(self, models: LLMModels, ledger: Ledger, client: Any = None):
+        self.models = models
+        self.tiers = models.tiers("azure_openai")
+        self.ledger = ledger
+        if client is None:
+            from openai import OpenAI
+
+            endpoint = os.environ.get("AZURE_OPENAI_ENDPOINT")
+            key = os.environ.get("AZURE_OPENAI_API_KEY")
+            if not endpoint or not key:
+                raise RuntimeError(
+                    "AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_API_KEY must be set (put them in .env). "
+                    "Use --offline to run without keys."
+                )
+            client = OpenAI(base_url=azure_v1_url(endpoint), api_key=key, max_retries=4, timeout=900)
+        self.client = client
+
+    def _create(self, step: str, model: str, msgs: list[dict[str, Any]], tool: dict[str, Any]) -> Any:
+        import openai
+
+        kwargs: dict[str, Any] = {
+            "model": model,
+            "messages": msgs,
+            "tools": [tool],
+            "tool_choice": {"type": "function", "function": {"name": "submit"}},
+            "max_completion_tokens": self.models.budget(step, "azure_openai"),
+        }
+        if self.tiers.reasoning_effort:
+            kwargs["reasoning_effort"] = self.tiers.reasoning_effort
+        try:
+            return self.client.chat.completions.create(**kwargs)
+        except openai.RateLimitError as e:
+            raise LLMOutputError(
+                f"{step}: Azure rate limit on deployment {model!r}. Its tokens-per-minute quota is too low for "
+                f"this step (it needs about {kwargs['max_completion_tokens'] + 8000:,} tokens in one minute). "
+                "Raise the deployment's TPM in Foundry > Deployments, or set llm.provider: anthropic in "
+                "config/models.yaml."
+            ) from e
+        except openai.NotFoundError as e:
+            raise LLMOutputError(
+                f"{step}: deployment {model!r} was not found at AZURE_OPENAI_ENDPOINT. Check the deployment "
+                "names under llm.azure_openai in config/models.yaml."
+            ) from e
+        except openai.AuthenticationError as e:
+            raise LLMOutputError(
+                f"{step}: Azure rejected the key. Check AZURE_OPENAI_API_KEY and AZURE_OPENAI_ENDPOINT."
+            ) from e
+        except openai.BadRequestError as e:
+            hint = (
+                " If the error mentions reasoning_effort, delete that line under llm.azure_openai in "
+                "config/models.yaml (this model does not reason)."
+                if "reasoning" in str(e)
+                else ""
+            )
+            raise LLMOutputError(f"{step}: Azure rejected the request: {e}.{hint}") from e
+
+    def generate(
+        self,
+        tier: str,
+        step: str,
+        system: str,
+        prompt: str,
+        schema: type[T],
+        *,
+        check: Check | None = None,
+        hints: dict[str, Any] | None = None,
+    ) -> T:
+        model = self.tiers.strong if tier == "strong" else self.tiers.small
+        tool = {
+            "type": "function",
+            "function": {
+                "name": "submit",
+                "description": "Return the result",
+                "parameters": schema.model_json_schema(),
+            },
+        }
+        msgs: list[dict[str, Any]] = [
+            {"role": "system", "content": system},
+            {"role": "user", "content": prompt},
+        ]
+        last_error = ""
+        for _attempt in range(3):  # first try plus at most two fixes
+            self.ledger.check_cap(self.ledger.estimate(step))
+            r = self._create(step, model, msgs, tool)
+            self.ledger.record_llm(step, model, _Usage(r.usage))
+            choice = r.choices[0]
+            if choice.finish_reason == "length":
+                raise LLMOutputError(
+                    f"{step}: the answer was cut off at the token limit. Raise llm.azure_openai.max_tokens.{step} "
+                    "in config/models.yaml, or lower reasoning_effort."
+                )
+            calls = choice.message.tool_calls or []
+            if not calls:
+                raise LLMOutputError(f"{step}: the model returned no function call")
+            call = calls[0]
+            try:
+                obj = schema.model_validate(json.loads(call.function.arguments))
+                problems = check(obj) if check else []
+                if not problems:
+                    return obj
+                last_error = "\n".join(f"- {p}" for p in problems)
+            except json.JSONDecodeError as e:
+                last_error = f"the arguments were not valid JSON ({e})"
+            except ValidationError as e:
+                last_error = str(e)
+            msgs += [
+                {
+                    "role": "assistant",
+                    "content": choice.message.content,
+                    "tool_calls": [
+                        {
+                            "id": call.id,
+                            "type": "function",
+                            "function": {"name": "submit", "arguments": call.function.arguments},
+                        }
+                    ],
+                },
+                {
+                    "role": "tool",
+                    "tool_call_id": call.id,
+                    "content": f"Invalid result:\n{last_error}\nFix every item and call submit again with the full result.",
                 },
             ]
         raise LLMOutputError(f"{step}: {schema.__name__} still invalid after 3 tries:\n{last_error}")
@@ -373,4 +530,6 @@ def build_llm(provider: str, models: LLMModels, ledger: Ledger, offline: bool) -
         return FakeLLM(ledger)
     if provider == "anthropic":
         return AnthropicLLM(models, ledger)
+    if provider == "azure_openai":
+        return AzureOpenAILLM(models, ledger)
     raise ValueError(f"unknown llm provider {provider!r}")

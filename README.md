@@ -35,9 +35,12 @@ Keys in `.env`:
 
 | Key | Used for | Needed when |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | topic, script, critic, package agents | `pipeline run` without `--offline` |
+| `ANTHROPIC_API_KEY` | topic, script, critic, package agents (Claude) | `llm.provider: anthropic` (the default) |
+| `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY` | the same agents on a model deployed in Azure AI Foundry | `llm.provider: azure_openai` |
 | `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION` | narration (free tier: 500K characters a month) | any run without `--offline` |
 | `OPENAI_API_KEY` | AI still images | only if stills are on; skip with `--no-stills` |
+
+**Choosing the script model.** `llm.provider` in `config/models.yaml` picks Claude (`anthropic`) or an Azure AI Foundry deployment (`azure_openai`); the model names for each live under it. `pipeline doctor` shows which one is active. Before switching to Azure, check your deployment's tokens-per-minute quota (see [docs/DEPLOY-AZURE.md](docs/DEPLOY-AZURE.md), Step 2).
 
 If Chrome is already installed, set `PIPELINE_CHROME=/path/to/chrome` so Remotion doesn't download its own copy. `RENDER_CONCURRENCY` sets render threads (default: Remotion picks half your cores).
 
@@ -96,7 +99,9 @@ render/            Remotion project: Long (1920x1080), Short (1080x1920), Thumbn
 assets/            Inter font, placeholder music beds
 examples/          hand-written scripts for `pipeline build`
 tests/             pytest; runs offline with fakes and a stub renderer
-infra/Dockerfile   image with Python, Node, FFmpeg and Chrome libraries
+infra/Dockerfile   image with Python, Node, FFmpeg and Chrome libraries; infra/entrypoint.sh
+infra/azure/       deploy, run, status, download and update-image scripts for Azure
+docs/              DEPLOY-AZURE.md
 ```
 
 Runtime folders (git-ignored): `runs/<run_id>/` holds every intermediate file (scripts, critic report, audio, timing, props, logs), `out/` holds upload folders, `cache/` holds paid results, `pipeline.db` holds runs, posts, costs and embeddings, `checkpoints.db` holds resume points.
@@ -118,17 +123,22 @@ RUN_RENDER_TESTS=1 pytest -q -m slow   # a real Remotion render (a few minutes)
 ruff check src tests && mypy src
 ```
 
+## Deploy to Azure
+
+Step-by-step guide: [docs/DEPLOY-AZURE.md](docs/DEPLOY-AZURE.md). The pipeline runs as an Azure Container Apps job; scripts in `infra/azure/` create the resources (`deploy.sh`), start runs (`run.sh`), show progress (`status.sh`) and download results (`download.sh`). The GitHub **deploy** workflow builds and tests the image and pushes it to your registry.
+
 ## Docker
 
 ```bash
 docker build -f infra/Dockerfile -t videopipe .
-docker run --rm --env-file .env -v "$PWD/runs:/app/runs" -v "$PWD/out:/app/out" -v "$PWD/data:/app/data" \
-  videopipe run --channel whatif --quick
+docker run --rm --env-file .env -e WORK_DIR=/work -v "$PWD/work:/work" videopipe run --channel whatif --quick
 ```
+
+`WORK_DIR` keeps runs, upload folders, cache and databases in one mounted folder (`work/` here).
 
 ## Known limits
 
-- The live Anthropic, Azure Speech and OpenAI image adapters are written but not yet tested against the real APIs. Run step 2 above first and expect a fix or two.
+- The live Anthropic, Azure OpenAI, Azure Speech and OpenAI image adapters are written but not yet tested against the real APIs. Run step 2 above first and expect a fix or two.
 - Model names in `config/models.yaml` and prices in `config/prices.yaml` need checking against the providers.
 - The two music beds are synthetic placeholders. Swap in licensed tracks (for example from the YouTube Audio Library) and list them under `music.tracks` in the style.
 - The critic's "sources" come from the model's own knowledge. Check every claim in `REVIEW.md` before you upload.

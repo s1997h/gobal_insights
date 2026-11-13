@@ -9,7 +9,7 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 import yaml
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ValidationError, model_validator
 
 from .paths import project_root
 from .schemas import ChannelConfig, StyleBible
@@ -19,11 +19,44 @@ class ConfigError(Exception):
     """A config file is missing, malformed or inconsistent."""
 
 
+LLM_PROVIDERS = ("anthropic", "azure_openai", "fake")
+
+
+class LLMTiers(BaseModel):
+    """Model names for one provider. For azure_openai these are your Foundry deployment names."""
+
+    strong: str  # script + critic
+    small: str  # topic + package
+    reasoning_effort: str | None = None  # azure_openai reasoning models only: minimal | low | medium | high
+    max_tokens: dict[str, int] = {}  # per-provider overrides of the shared limits
+
+
 class LLMModels(BaseModel):
     provider: str = "anthropic"
-    strong: str
-    small: str
     max_tokens: dict[str, int] = {}
+    anthropic: LLMTiers | None = None
+    azure_openai: LLMTiers | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _legacy_layout(cls, data: Any) -> Any:
+        # older models.yaml files had strong/small at the top level, meaning Claude
+        if isinstance(data, dict) and "strong" in data and "anthropic" not in data:
+            data = dict(data)
+            data["anthropic"] = {"strong": data.pop("strong"), "small": data.pop("small", data.get("strong"))}
+        return data
+
+    def tiers(self, provider: str | None = None) -> LLMTiers:
+        name = provider or self.provider
+        t = getattr(self, name, None) if name in ("anthropic", "azure_openai") else None
+        if t is None:
+            raise ValueError(f"models.yaml has no llm.{name} block (strong/small model names)")
+        return t
+
+    def budget(self, step: str, provider: str | None = None) -> int:
+        """Max output tokens for a step: the provider's override, else the shared value, else 8000."""
+        t = self.tiers(provider)
+        return t.max_tokens.get(step) or self.max_tokens.get(step) or 8000
 
 
 class TTSModels(BaseModel):
@@ -95,6 +128,13 @@ def load_config(root: Path | None = None) -> AppConfig:
         raise ConfigError(f"{cfg_dir / 'platforms.yaml'}: must be a mapping of platform -> formats")
 
     models = _validate(ModelsConfig, _load_yaml(cfg_dir / "models.yaml"), cfg_dir / "models.yaml")
+    if models.llm.provider not in LLM_PROVIDERS:
+        raise ConfigError(f"{cfg_dir / 'models.yaml'}: llm.provider must be one of {list(LLM_PROVIDERS)}")
+    if models.llm.provider != "fake":
+        try:
+            models.llm.tiers()
+        except ValueError as e:
+            raise ConfigError(f"{cfg_dir / 'models.yaml'}: {e}") from e
     prices = _validate(Prices, _load_yaml(cfg_dir / "prices.yaml"), cfg_dir / "prices.yaml")
 
     channels: dict[str, ChannelConfig] = {}

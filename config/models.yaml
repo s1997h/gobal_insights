@@ -1,9 +1,21 @@
 # Model names live here, never in code. Swap a provider by changing this file.
 llm:
+  # Who writes the scripts: anthropic (Claude API) or azure_openai (a model you deployed in
+  # Azure AI Foundry). Switching is this one line; the matching keys go in .env.
   provider: anthropic
-  strong: claude-sonnet-5-5     # script + critic
-  small: claude-haiku-5-5       # topic + package
   max_tokens: {topic: 3000, script: 16000, critic: 6000, package: 4000}
+  anthropic:
+    strong: claude-sonnet-5-5     # script + critic
+    small: claude-haiku-5-5       # topic + package
+  azure_openai:
+    # Your Foundry *deployment names* (Foundry suggests the model name; keep it).
+    strong: gpt-5-mini
+    small: gpt-5-nano
+    # GPT-5-family models reason before answering. Delete this line for models that don't
+    # (gpt-4.1, DeepSeek-V3, Llama), or the request is rejected.
+    reasoning_effort: low
+    # Reasoning tokens count toward the limit, so allow more than Claude needs.
+    max_tokens: {script: 32000, critic: 12000, topic: 6000, package: 6000}
 tts:
   provider: azure               # azure | fake
 image:
