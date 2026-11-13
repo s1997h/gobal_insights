@@ -51,7 +51,13 @@ fi
 
 say "Container Apps environment $ENV_NAME"
 az containerapp env show -n "$ENV_NAME" -g "$RG" -o none 2>/dev/null \
-  || az containerapp env create -n "$ENV_NAME" -g "$RG" -l "$LOCATION" --enable-workload-profiles -o none
+  || az containerapp env create -n "$ENV_NAME" -g "$RG" -l "$LOCATION" --environment-mode WorkloadProfiles -o none
+ENV_MODE="$(az containerapp env show -n "$ENV_NAME" -g "$RG" --query properties.environmentMode -o tsv 2>/dev/null || true)"
+if [ "$ENV_MODE" = "Express" ]; then
+  echo "ERROR: $ENV_NAME is an Express environment, which can't run jobs or mount file shares."
+  echo "Delete it (az containerapp env delete -n $ENV_NAME -g $RG --yes) and run this script again."
+  exit 1
+fi
 az containerapp env storage set -n "$ENV_NAME" -g "$RG" --storage-name "$SHARE" \
   --azure-file-account-name "$STORAGE" --azure-file-account-key "$STORAGE_KEY" \
   --azure-file-share-name "$SHARE" --access-mode ReadWrite -o none

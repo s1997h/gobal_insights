@@ -207,6 +207,7 @@ The cloud keeps its own run history and databases on the file share, separate fr
 | `RequestDisallowedByPolicy` or "location not allowed" | The region isn't allowed for your subscription. Do Step 1, `export LOCATION=...`, and run the script again. |
 | `TasksOperationsNotAllowed` | Something ran `az acr build`. Build with the GitHub **deploy** workflow instead (Step 4). |
 | The deploy workflow fails at "Check the registry secrets" | Add `ACR_NAME`, `ACR_USERNAME` and `ACR_PASSWORD` in GitHub (Step 3). |
+| `'Storage' resources are not supported on express environments`, or jobs refused | The environment was created as Express. Delete it (`az containerapp env delete -n videopipe-env -g rg-videopipe --yes`) and run `deploy.sh` again; it creates it with `--environment-mode WorkloadProfiles`. |
 | An execution fails at once with an image pull error | The registry login changed. Run `bash infra/azure/deploy.sh` to refresh the job's secret. |
 | `Permission denied` under `/work`, or `database is locked` | The share's mount options are missing. In the portal, open the job's **Volumes** and check that the options include `uid=1000` and `nobrl`, then run `deploy.sh` again. |
 | `Azure rate limit ... tokens-per-minute` | The model deployment's quota is too low (Step 2.3). Raise it, or switch `llm.provider` back to `anthropic`. |
