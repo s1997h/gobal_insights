@@ -64,13 +64,13 @@ export LOCATION=southeastasia
 
 ## Step 2: Choose the script model
 
-The pipeline can write scripts with **Claude** (`provider: anthropic`, the default) or with a model you deploy in **Azure AI Foundry** (`provider: azure_openai`). The setting is `llm.provider` in `config/models.yaml`.
+The pipeline can write scripts with a model you deploy in **Azure AI Foundry** (`provider: azure_openai`, the current setting, using gpt-5-mini) or with **Claude** (`provider: anthropic`). The setting is `llm.provider` in `config/models.yaml`.
 
-Skip this step to keep Claude. To use an Azure model instead:
+To use Claude instead, set `provider: anthropic`, put `ANTHROPIC_API_KEY` in `.env`, and skip the rest of this step. For the Azure model:
 
 1. Open [ai.azure.com](https://ai.azure.com), sign in with your student account, and create a project in the region from Step 1.
-2. Go to **Models + endpoints → Deploy model → Deploy base model**. Deploy **gpt-5-mini** (used for scripts and the critic) and **gpt-5-nano** (used for topics and titles), keeping the deployment names Foundry suggests.
-3. **Check the quota before going further.** In each deployment's settings, set **Tokens per minute** as high as the slider allows. The script step needs about **40,000 tokens per minute**, because one request asks for up to 32,000 output tokens. Student subscriptions are often limited to 1,000 tokens per minute. If yours is, an Azure model can't write the scripts: stay on Claude, or upgrade the subscription to pay-as-you-go.
+2. Go to **Models + endpoints → Deploy model → Deploy base model**. Deploy **gpt-5-mini** as **Global Standard**, keeping the deployment name Foundry suggests. It does every step; Azure for Students subscriptions tend to have quota for gpt-5-mini but not gpt-5-nano.
+3. **Check the quota before going further** (Foundry → **Quota → Token per minute**). In the deployment's settings, set **Tokens per minute** as high as the slider allows. The script step needs about **40,000 tokens per minute**, because one request asks for up to 32,000 output tokens. Student subscriptions are often limited to 1,000 tokens per minute. If yours is, an Azure model can't write the scripts: stay on Claude, or upgrade the subscription to pay-as-you-go.
 4. Open your resource's **Keys and Endpoint** page. Copy the endpoint and Key 1 into `.env`:
 
    ```bash
@@ -78,7 +78,7 @@ Skip this step to keep Claude. To use an Azure model instead:
    AZURE_OPENAI_API_KEY=<key 1>
    ```
 
-5. In `config/models.yaml`, set `provider: azure_openai`. If you named the deployments differently, change `strong` and `small` under `azure_openai` to match. If you deployed a model that doesn't reason (gpt-4.1, DeepSeek-V3, Llama), delete the `reasoning_effort` line.
+5. `config/models.yaml` already says `provider: azure_openai` with `strong` and `small` both set to `gpt-5-mini`. If you named the deployment differently, change both to match. If you deployed a model that doesn't reason (gpt-4.1, DeepSeek-V3, Llama), delete the `reasoning_effort` line.
 6. Test it on your machine first:
 
    ```bash
