@@ -9,7 +9,7 @@ import {CAST} from './Cast';
  * that matters sits inside the middle 80% and reads at thumbnail size: one shape, bold outlines.
  */
 
-export type AvatarProps = {variant: 'bulb' | 'mascot' | 'monogram'; letters?: string};
+export type AvatarProps = {variant: 'bulb' | 'mascot' | 'monogram' | 'lab' | 'labmascot'; letters?: string};
 
 let loaded = false;
 const fonts = () => {
@@ -142,11 +142,86 @@ const Monogram: React.FC<{letters: string}> = ({letters}) => (
   </svg>
 );
 
+
+/** A lab flask with "IF" on the glass and a question mark rising out of it: "The If Lab". */
+const Flask: React.FC<{label?: string; s?: number}> = ({label = 'IF', s = 1}) => (
+  <g transform={`scale(${s})`}>
+    <defs>
+      <clipPath id={`flask-in-${s}`}>
+        <path d="M -48 -150 L -48 -40 L -205 220 Q -215 250 -185 250 L 185 250 Q 215 250 205 220 L 48 -40 L 48 -150 Z" />
+      </clipPath>
+    </defs>
+    <path d="M -48 -150 L -48 -40 L -205 220 Q -215 250 -185 250 L 185 250 Q 215 250 205 220 L 48 -40 L 48 -150 Z" fill="#e8f6fb" />
+    <g clipPath={`url(#flask-in-${s})`}>
+      <path d="M -260 60 Q -170 30 -85 60 T 85 60 T 260 60 L 260 300 L -260 300 Z" fill={TEAL} />
+      <path d="M -260 60 Q -170 30 -85 60 T 85 60 T 260 60" fill="none" stroke="#7fe0d6" strokeWidth={10} />
+      {[[-110, 190, 14], [-40, 150, 10], [70, 200, 16], [120, 130, 9], [10, 100, 12]].map(([x, y, r], i) => (
+        <circle key={i} cx={x} cy={y} r={r} fill="#ffffff" opacity={0.55} />
+      ))}
+      <path d="M -150 -10 L -110 -10 L -170 120" fill="none" stroke="#ffffff" strokeWidth={16} strokeLinecap="round" opacity={0.6} />
+    </g>
+    <path d="M -48 -150 L -48 -40 L -205 220 Q -215 250 -185 250 L 185 250 Q 215 250 205 220 L 48 -40 L 48 -150" fill="none" stroke={INK} strokeWidth={14} strokeLinejoin="round" />
+    <rect x={-72} y={-178} width={144} height={36} rx={14} fill="#e8f6fb" stroke={INK} strokeWidth={14} />
+    <text x={0} y={205} textAnchor="middle" fontFamily="Inter" fontWeight={900} fontSize={150} fill={CREAM} stroke={INK} strokeWidth={16} paintOrder="stroke" letterSpacing={-4}>
+      {label}
+    </text>
+  </g>
+);
+
+const Lab: React.FC = () => (
+  <svg viewBox="0 0 800 800" width="100%" height="100%">
+    <Background />
+    <Rays cx={400} cy={300} r0={230} r1={300} n={7} />
+    {[[372, 268, 13], [418, 238, 10], [392, 212, 8]].map(([x, y, r], i) => (
+      <circle key={i} cx={x} cy={y} r={r} fill={GOLD} stroke={INK} strokeWidth={5} />
+    ))}
+    <text x={400} y={205} textAnchor="middle" fontFamily="Inter" fontWeight={900} fontSize={230} fill={GOLD} stroke={INK} strokeWidth={18} paintOrder="stroke">
+      ?
+    </text>
+    <g transform="translate(400 445)">
+      <Flask />
+    </g>
+  </svg>
+);
+
+const LabMascot: React.FC = () => (
+  <svg viewBox="0 0 800 800" width="100%" height="100%">
+    <defs>
+      <radialGradient id="av-teal" cx="50%" cy="40%" r="70%">
+        <stop offset="0" stopColor="#5fd8cc" />
+        <stop offset="1" stopColor="#1f8f84" />
+      </radialGradient>
+    </defs>
+    <rect width={800} height={800} fill="url(#av-teal)" />
+    {Array.from({length: 14}, (_, i) => {
+      const a = (i / 14) * Math.PI * 2;
+      const b = a + Math.PI / 28;
+      return <path key={i} d={`M 400 380 L ${400 + Math.cos(a) * 900} ${380 + Math.sin(a) * 900} L ${400 + Math.cos(b) * 900} ${380 + Math.sin(b) * 900} Z`} fill="#ffffff" opacity={0.12} />;
+    })}
+    <g stroke={INK} strokeWidth={10} strokeLinejoin="round">
+      <path d="M 170 820 Q 180 610 400 600 Q 620 610 630 820 Z" fill="#f4f1ea" />
+      <path d="M 330 604 L 400 700 L 470 604" fill="none" />
+      <path d="M 400 700 L 400 820" />
+    </g>
+    <Character look={CAST.you} pose="stand" expression="happy" x={400} y={380} scale={4.6} t={0.5} headOnly facing={0} />
+    {/* lab goggles pushed up on the forehead */}
+    <g stroke={INK} strokeWidth={10}>
+      <path d="M 205 250 Q 400 205 595 250" fill="none" stroke="#3a3f4a" strokeWidth={22} />
+      <rect x={262} y={196} width={120} height={78} rx={30} fill="#bfe7f5" />
+      <rect x={418} y={196} width={120} height={78} rx={30} fill="#bfe7f5" />
+      <path d="M 382 232 L 418 232" />
+    </g>
+    <g transform="translate(615 600) rotate(10)">
+      <Flask s={0.42} label="?" />
+    </g>
+  </svg>
+);
+
 export const ChannelAvatar: React.FC<AvatarProps> = ({variant, letters = 'GI'}) => {
   fonts();
   return (
     <AbsoluteFill>
-      {variant === 'bulb' ? <Bulb /> : variant === 'mascot' ? <Mascot /> : <Monogram letters={letters} />}
+      {variant === 'bulb' ? <Bulb /> : variant === 'mascot' ? <Mascot /> : variant === 'lab' ? <Lab /> : variant === 'labmascot' ? <LabMascot /> : <Monogram letters={letters} />}
     </AbsoluteFill>
   );
 };
