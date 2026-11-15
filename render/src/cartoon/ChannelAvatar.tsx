@@ -227,3 +227,112 @@ export const ChannelAvatar: React.FC<AvatarProps> = ({variant, letters = 'GI'}) 
 };
 
 export const sampleAvatar: AvatarProps = {variant: 'bulb'};
+
+// ------------------------------------------------------------------------------------------------
+/**
+ * Channel banner, 2560 x 1440. Phones and desktops only show the middle 1546 x 423 (the safe
+ * area), so the name, tagline and face all sit there; the doodles around it only show on TVs.
+ */
+export type BannerProps = {name?: string; highlight?: string; tagline?: string; sub?: string};
+
+const Coin: React.FC<{r: number}> = ({r}) => (
+  <g>
+    <circle r={r} fill={GOLD} stroke={INK} strokeWidth={r * 0.12} />
+    <circle r={r * 0.72} fill="none" stroke="#c98a1c" strokeWidth={r * 0.08} />
+    <text x={0} y={r * 0.36} textAnchor="middle" fontFamily="Inter" fontWeight={900} fontSize={r * 1.05} fill={INK}>
+      ₹
+    </text>
+  </g>
+);
+
+const ChartUp: React.FC<{s: number; down?: boolean}> = ({s, down}) => (
+  <g transform={`scale(${s})`} fill="none" strokeLinecap="round" strokeLinejoin="round">
+    <rect x={-60} y={-50} width={120} height={100} rx={14} fill={CREAM} stroke={INK} strokeWidth={7} />
+    <path d={down ? 'M -40 -25 L -12 0 L 8 -12 L 40 28' : 'M -40 28 L -12 2 L 8 14 L 40 -25'} stroke={down ? '#e9625a' : TEAL} strokeWidth={10} />
+  </g>
+);
+
+const QMark: React.FC<{s: number}> = ({s}) => (
+  <text x={0} y={0} textAnchor="middle" fontFamily="Inter" fontWeight={900} fontSize={120 * s} fill={GOLD} stroke={INK} strokeWidth={10 * s} paintOrder="stroke">
+    ?
+  </text>
+);
+
+export const ChannelBanner: React.FC<BannerProps> = ({
+  name = 'The If Lab',
+  highlight = 'If',
+  tagline = 'Business & money stories, animated',
+  sub = 'What if…  ·  Why it failed  ·  How it really works',
+}) => {
+  fonts();
+  // scattered doodles, kept out of the centre strip
+  const doodles: [string, number, number, number, number][] = [
+    ['coin', 180, 200, 70, -10], ['chart', 520, 300, 1.1, -8], ['q', 860, 210, 1.1, 10], ['flask', 1250, 230, 0.45, -6],
+    ['coin', 1620, 160, 55, 12], ['chartd', 1960, 270, 1.0, 6], ['q', 2280, 200, 1.3, -12], ['coin', 2440, 420, 60, 0],
+    ['flask', 140, 470, 0.4, 8], ['q', 300, 1180, 1.2, -6], ['coin', 640, 1260, 75, 8], ['chartd', 980, 1150, 1.1, -5],
+    ['coin', 1380, 1270, 58, -12], ['flask', 1700, 1180, 0.5, 6], ['chart', 2060, 1240, 1.2, 8], ['q', 2380, 1120, 1.1, 14],
+    ['coin', 120, 900, 50, 0], ['coin', 2460, 960, 48, 0],
+  ];
+  return (
+    <AbsoluteFill>
+      <svg viewBox="0 0 2560 1440" width="100%" height="100%">
+        <defs>
+          <radialGradient id="bn-bg" cx="50%" cy="50%" r="70%">
+            <stop offset="0" stopColor={NAVY2} />
+            <stop offset="1" stopColor={NAVY} />
+          </radialGradient>
+          <pattern id="bn-dots" width="56" height="56" patternUnits="userSpaceOnUse">
+            <circle cx="28" cy="28" r="2.6" fill="#ffffff" opacity="0.07" />
+          </pattern>
+        </defs>
+        <rect width={2560} height={1440} fill="url(#bn-bg)" />
+        <rect width={2560} height={1440} fill="url(#bn-dots)" />
+        {doodles.map(([kind, x, y, s, r], i) => (
+          <g key={i} transform={`translate(${x} ${y}) rotate(${r})`} opacity={0.9}>
+            {kind === 'coin' ? <Coin r={s} /> : kind === 'chart' ? <ChartUp s={s} /> : kind === 'chartd' ? <ChartUp s={s} down /> : kind === 'q' ? <QMark s={s} /> : <Flask s={s} label="₹" />}
+          </g>
+        ))}
+        {/* safe area: 1546 x 423 centred, y 508..931 */}
+        <rect x={507} y={508} width={1546} height={423} rx={60} fill="#0b1b33" opacity={0.55} />
+        <g transform="translate(760 720)">
+          <defs>
+            <clipPath id="bn-head">
+              <circle r={184} />
+            </clipPath>
+          </defs>
+          <circle r={190} fill={TEAL} stroke={INK} strokeWidth={12} />
+          <g clipPath="url(#bn-head)">
+            <Character look={CAST.you} pose="stand" expression="happy" x={0} y={10} scale={3.3} t={0.5} headOnly />
+          </g>
+          <g stroke={INK} strokeWidth={8}>
+            <path d="M -150 -110 Q 0 -150 150 -110" fill="none" stroke="#3a3f4a" strokeWidth={16} />
+            <rect x={-110} y={-150} width={92} height={60} rx={24} fill="#bfe7f5" />
+            <rect x={18} y={-150} width={92} height={60} rx={24} fill="#bfe7f5" />
+            <path d="M -18 -122 L 18 -122" />
+          </g>
+          <g transform="translate(150 120) rotate(12)">
+            <Flask s={0.3} label="₹" />
+          </g>
+        </g>
+        <g transform="translate(985 690)">
+          <text x={0} y={0} fontFamily="Inter" fontWeight={900} fontSize={170} fill={CREAM} stroke={INK} strokeWidth={16} paintOrder="stroke" letterSpacing={-5}>
+            {name.split(highlight).map((part, i, arr) => (
+              <React.Fragment key={i}>
+                {part}
+                {i < arr.length - 1 ? <tspan fill={GOLD}>{highlight}</tspan> : null}
+              </React.Fragment>
+            ))}
+          </text>
+          <text x={6} y={92} fontFamily="Inter" fontWeight={800} fontSize={54} fill={TEAL}>
+            {tagline}
+          </text>
+          <text x={6} y={160} fontFamily="Inter" fontWeight={700} fontSize={40} fill="#c9d3e3">
+            {sub}
+          </text>
+        </g>
+      </svg>
+    </AbsoluteFill>
+  );
+};
+
+export const sampleBanner: BannerProps = {};
