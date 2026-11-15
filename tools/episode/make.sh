@@ -27,8 +27,9 @@ python3 "$ROOT/tools/episode/sound.py" "$W/shots.json" "$W/audio/timing.json" "$
 ffmpeg -y -loglevel error -i "$W/audio/narration.wav" -i "$W/audio/music.wav" -i "$W/audio/sfx.wav" -filter_complex \
 "[0:a]aresample=48000,highpass=f=80,equalizer=f=200:t=q:w=1:g=2,equalizer=f=3200:t=q:w=1.2:g=1.5,deesser=i=0.4,acompressor=threshold=-20dB:ratio=2.5:attack=8:release=140:makeup=2,pan=stereo|c0=c0|c1=c0,asplit=2[voice][sc];\
 [1:a]volume=0.20[m];[m][sc]sidechaincompress=threshold=0.03:ratio=6:attack=15:release=350[duck];[2:a]volume=0.6[fx];\
-[voice][duck][fx]amix=inputs=3:duration=first:normalize=0,loudnorm=I=-14:TP=-1.5:LRA=11,aresample=48000[a]" \
-  -map "[a]" -c:a aac -b:a 192k -ar 48000 -ac 2 "$W/mix.m4a"
+[voice][duck][fx]amix=inputs=3:duration=first:normalize=0,loudnorm=I=-14:TP=-1.5:LRA=11,\
+aresample=192000,alimiter=limit=0.6:attack=1:release=60:level=false,aresample=48000,lowpass=f=19000[a]" \
+  -map "[a]" -c:a aac -b:a 256k -ar 48000 -ac 2 "$W/mix.m4a"
 
 cd "$ROOT/render"
 npx remotion bundle src/index.ts --out-dir "$W/bundle" --public-dir "$W/public" --log=error
