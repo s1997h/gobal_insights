@@ -7,6 +7,7 @@ import {FPS} from './types';
 import {CartoonTest} from './cartoon/CartoonTest';
 import {Episode, calcEpisode, sampleEpisode} from './cartoon/Episode';
 import {EpisodeThumb, sampleEpisodeThumb} from './cartoon/EpisodeThumb';
+import {ChannelAvatar, sampleAvatar} from './cartoon/ChannelAvatar';
 
 export const RemotionRoot: React.FC = () => (
   <>
@@ -32,6 +33,7 @@ export const RemotionRoot: React.FC = () => (
     />
     <Composition id="CartoonTest" component={CartoonTest} width={1920} height={1080} fps={FPS} durationInFrames={240} />
     <Composition id="Episode" component={Episode} width={1920} height={1080} fps={FPS} durationInFrames={180} defaultProps={sampleEpisode} calculateMetadata={calcEpisode} />
+    <Still id="ChannelAvatar" component={ChannelAvatar} width={800} height={800} defaultProps={sampleAvatar} />
     <Still id="EpisodeThumb" component={EpisodeThumb} width={1280} height={720} defaultProps={sampleEpisodeThumb} />
     <Still id="Thumbnail" component={Thumbnail} width={1280} height={720} defaultProps={sampleThumb} />
   </>
