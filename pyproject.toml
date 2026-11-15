@@ -28,6 +28,8 @@ dependencies = [
 # Better variety check (local embedding model). The pipeline falls back to a
 # built-in hashing embedder when this is not installed.
 embeddings = ["fastembed"]
+# Free local voice (tts.provider: kokoro). Model files are downloaded separately; see KokoroTTS.
+kokoro = ["kokoro-onnx>=0.4"]
 dev = ["ruff", "mypy", "pytest", "types-PyYAML"]
 
 [project.scripts]
