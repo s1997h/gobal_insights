@@ -353,10 +353,20 @@ def doctor() -> None:
         if llm_provider == "azure_openai"
         else [("ANTHROPIC_API_KEY", "scripts and critic")]
     )
+    try:
+        tts_provider = load_config(root).models.tts.provider
+    except ConfigError:
+        tts_provider = "azure"
+    typer.echo(f"INFO voice provider: {tts_provider} (tts.provider in config/models.yaml)")
+    tts_vars = {
+        "azure": [("AZURE_SPEECH_KEY", "voice"), ("AZURE_SPEECH_REGION", "voice")],
+        "elevenlabs": [("ELEVENLABS_API_KEY", "voice")],
+        "openai": [("OPENAI_API_KEY", "voice")],
+        "kokoro": [("KOKORO_DIR", "voice model files (optional; default ~/.cache/videopipe/kokoro)")],
+    }.get(tts_provider, [])
     for var, why in [
         *llm_vars,
-        ("AZURE_SPEECH_KEY", "voice"),
-        ("AZURE_SPEECH_REGION", "voice"),
+        *tts_vars,
         ("OPENAI_API_KEY", "AI stills (optional with --no-stills)"),
     ]:
         typer.echo(

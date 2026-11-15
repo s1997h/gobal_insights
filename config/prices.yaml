@@ -12,6 +12,11 @@ llm:
 # VERIFY the Azure and OpenAI rates below on their pricing pages.
 tts:
   azure: {usd_per_million_chars: 16.0, free_chars_per_month: 500000}
+  # ElevenLabs Starter: $6 a month for 30,000 characters, so about $200 per million. VERIFY your plan.
+  elevenlabs: {usd_per_million_chars: 200.0}
+  # gpt-4o-mini-tts is billed by tokens; about $0.015 a minute, roughly $15 per million characters. VERIFY.
+  openai: {usd_per_million_chars: 15.0}
+  kokoro: {usd_per_million_chars: 0.0}
 image:
   openai: {usd_per_image: 0.04}
 # Pessimistic per-call estimates used by the cap check *before* a paid call.

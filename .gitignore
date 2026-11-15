@@ -23,3 +23,7 @@ token*.json
 # node
 node_modules
 render/out/
+
+# cartoon episodes: everything under work/ and out/ is generated
+episodes/*/work/
+episodes/*/out/

@@ -88,6 +88,33 @@ Rendering is the slow part and is CPU-bound. On a 2-core machine Remotion render
 
 `config/channels/whatif.yaml` sets `budget: {per_video_usd: 8, per_month_usd: 150}`. Every paid call checks the cap *before* it runs and stops the run if it would go over; `pipeline resume` continues once you raise the cap. **The prices in `config/prices.yaml` are placeholders: check each against the provider's pricing page before relying on the caps.**
 
+## Cartoon episodes (hand-directed)
+
+An episode is a shot list in `episodes/<name>/shots.py`: for every shot, the narration line, the set, actors with
+poses and expressions, props, effects, a stat or chart overlay and a camera move. One command voices it, renders it
+in the doodle-cartoon style (`render/src/cartoon/Episode.tsx`) and writes the upload kit:
+
+```bash
+tools/episode/make.sh episodes/phone-30-days                       # free local voice (Kokoro)
+tools/episode/make.sh episodes/phone-30-days elevenlabs <voice-id>  # most human-sounding
+tools/episode/make.sh episodes/phone-30-days openai coral           # gpt-4o-mini-tts, steerable
+```
+
+Output lands in `episodes/<name>/out/`: the MP4 (1080p, -14 LUFS), `thumbnail.png`, `captions.srt` and
+`upload.md` (title, description with chapters and sources, tags). Voice lines are cached, so changing one shot
+re-voices only that shot. Rendering takes about 25 minutes for 8.5 minutes of video on 2 CPU cores.
+
+### Voices
+
+| Provider | Sounds | Cost | Needs |
+|---|---|---|---|
+| `elevenlabs` | most human; exact word timings | Starter plan, about $6 a month for ~30 minutes (commercial licence) | `ELEVENLABS_API_KEY`, a voice id |
+| `openai` | natural, steerable with plain-English direction | about $0.015 a minute | `OPENAI_API_KEY` |
+| `azure` | natural; word timings | free tier 0.5M characters a month | `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION` |
+| `kokoro` | good, a little flat | free, runs on the CPU | model files in `KOKORO_DIR` (links in `adapters/tts.py`) |
+
+Set the pipeline's voice with `tts.provider` in `config/models.yaml` and `narrator.voice` in the channel style.
+
 ## Project layout
 
 ```
