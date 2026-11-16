@@ -515,6 +515,9 @@ class FakeLLM:
                     "hashtags": ["#whatif", "#explained", "#curious"],
                 }
             )
+        elif hasattr(schema, "offline_example"):
+            # schemas outside this module bring their own deterministic stand-in (see pipeline.episode.schemas)
+            obj = schema.offline_example(h)  # type: ignore[attr-defined]
         else:  # pragma: no cover
             raise NotImplementedError(f"FakeLLM cannot produce {schema.__name__}")
         result = schema.model_validate(obj.model_dump())

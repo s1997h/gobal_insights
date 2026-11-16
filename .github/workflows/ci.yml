@@ -48,3 +48,10 @@ jobs:
           mkdir -p work && chmod 777 work
           docker run --rm -e WORK_DIR=/work -v "$PWD/work:/work" videopipe:ci run --channel whatif --offline --quick
           find work/out -name video.mp4 | grep .
+      # The cartoon-episode command, end to end: script stand-in, real render, one Short, thumbnail.
+      - name: Smoke test episode
+        if: github.event_name == 'pull_request'
+        run: |
+          docker run --rm -e WORK_DIR=/work -v "$PWD/work:/work" videopipe:ci episode --channel iflab --offline --quick --shorts 1
+          find work/out/iflab -name short1.mp4 | grep .
+          find work/out/iflab -name thumbnail.png | grep .

@@ -73,7 +73,12 @@ def _execute(
         typer.secho(f"Setup problem: {e}", fg="red", err=True)
         raise typer.Exit(2) from e
     try:
-        execute(ctx, initial)
+        if options.get("mode") == "episode":
+            from .episode.run import run_episode
+
+            run_episode(ctx)
+        else:
+            execute(ctx, initial)
     except BudgetExceeded as e:
         typer.secho(f"Stopped by the spend cap: {e}", fg="red", err=True)
     except PipelineError as e:
@@ -120,6 +125,39 @@ def run(
         f"Run {run_id} ({channel}){' [offline fakes]' if offline else ''}{' [quick]' if quick else ''}"
     )
     _execute(cfg, sf, channel, run_id, options, {"run_id": run_id})
+
+
+@app.command()
+def episode(
+    channel: Channel,
+    topic: Annotated[
+        str | None, typer.Option(help="Make this topic instead of the next line in the channel's backlog.md")
+    ] = None,
+    angle: Annotated[str | None, typer.Option(help="The angle to take (with --topic)")] = None,
+    shorts: Annotated[int, typer.Option(help="How many Shorts to cut from the video")] = 4,
+    quick: Annotated[bool, typer.Option(help="Make a ~1 minute video to test cheaply")] = False,
+    offline: Annotated[
+        bool, typer.Option(help="Use fake providers: no API keys, no cost, placeholder script and beep audio")
+    ] = False,
+) -> None:
+    """Cartoon episode: topic to animated video, Shorts, thumbnail and upload kit in one run."""
+    cfg, sf = _setup()
+    cfg.channel(channel)
+    options = {
+        "mode": "episode",
+        "topic": topic,
+        "angle": angle,
+        "shorts": shorts,
+        "quick": quick,
+        "offline": offline,
+        "no_stills": True,
+    }
+    run_id = new_run_id(channel)
+    create_run(sf, channel, run_id, options)
+    typer.echo(
+        f"Episode {run_id} ({channel}){' [offline fakes]' if offline else ''}{' [quick]' if quick else ''}"
+    )
+    _execute(cfg, sf, channel, run_id, options, None)
 
 
 @app.command()

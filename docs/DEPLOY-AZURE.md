@@ -182,11 +182,54 @@ When the $100 credit is used up, Azure disables the subscription, so nothing is 
 
 ---
 
+## The weekly cartoon episode
+
+`pipeline episode` makes one animated video, four Shorts, the thumbnail and the upload kit from the next line of
+`config/channels/iflab/backlog.md` (see the README for what each step does). It runs in the same job:
+
+```bash
+bash infra/azure/run.sh episode --channel iflab --offline --quick   # free rehearsal, about 10 minutes
+bash infra/azure/run.sh episode --channel iflab --quick             # real model and voice, a 1-minute video
+bash infra/azure/run.sh episode --channel iflab                     # the real thing, about 30 to 50 minutes
+bash infra/azure/download.sh <run_id>                               # then read REVIEW.md before posting
+```
+
+Before the first real run:
+
+1. **Voice.** `config/styles/iflab.yaml` names an Azure HD voice. HD voices exist only in some Speech regions
+   (East US, West Europe and Southeast Asia among them). If your Speech resource is in another region the run
+   logs that and uses `fallback_voice` for the whole video. To get the HD voice, create a second Speech resource
+   in a supported region and put its key and region in `.env`, then run `bash infra/azure/deploy.sh`.
+2. **Pick the voice by ear** in Speech Studio's voice gallery (the code cannot hear), and put its name in the
+   style file.
+3. **Pace.** After the first real run, `REVIEW.md` shows the measured words a minute. Put that number in
+   `narrator.wpm` so scripts come out at the length you asked for.
+
+To run it on a schedule instead of by hand, create a second job from the same YAML you used for
+`videopipe-job`, with a different name and these three changes (cron is in UTC; `30 4 * * 5` is Friday 10:00 in
+India, which leaves the weekend to review before Sunday's slot). Check the field names against the current
+Container Apps jobs reference before you apply it:
+
+```yaml
+properties:
+  configuration:
+    triggerType: Schedule
+    scheduleTriggerConfig: {cronExpression: "30 4 * * 5", parallelism: 1, replicaCompletionCount: 1}
+  template:
+    containers:
+      - args: [episode, --channel, iflab]
+```
+
+Scheduled or not, nothing is posted for you: every run stops at `ready_for_review`.
+
+---
+
 ## Day to day
 
 | To do this | Run |
 | --- | --- |
 | Make a video | `bash infra/azure/run.sh run --channel whatif` (add `--topic "..." --shape ...` as needed) |
+| Make this week's cartoon episode (video, 4 Shorts, thumbnail, upload kit) | `bash infra/azure/run.sh episode --channel iflab` (add `--topic "..."` to skip the backlog) |
 | See progress and run ids | `bash infra/azure/status.sh` |
 | Get the files | `bash infra/azure/download.sh <run_id>`, then upload by hand following each `UPLOAD.md` |
 | Continue a failed run | `bash infra/azure/run.sh resume <run_id>` |

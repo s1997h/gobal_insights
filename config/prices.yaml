@@ -12,6 +12,9 @@ llm:
 # VERIFY the Azure and OpenAI rates below on their pricing pages.
 tts:
   azure: {usd_per_million_chars: 16.0, free_chars_per_month: 500000}
+  # HD voices (names containing "HD", e.g. en-IN-Aarti:DragonHDLatestNeural) are billed at a higher rate and
+  # are not covered by the free monthly characters. Set high on purpose; VERIFY on the Azure Speech pricing page.
+  azure_hd: {usd_per_million_chars: 30.0}
   # ElevenLabs Starter: $6 a month for 30,000 characters, so about $200 per million. VERIFY your plan.
   elevenlabs: {usd_per_million_chars: 200.0}
   # gpt-4o-mini-tts is billed by tokens; about $0.015 a minute, roughly $15 per million characters. VERIFY.
@@ -25,3 +28,4 @@ estimates:
   script: 0.35
   critic: 0.20
   package: 0.05
+  shorts: 0.08

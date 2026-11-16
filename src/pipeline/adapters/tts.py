@@ -95,9 +95,11 @@ class AzureTTS(_CachedTTS):
         synth.synthesis_word_boundary.connect(on_word)
         pct = round((rate - 1.0) * 100)
         lang = voice.split("-")[0] + "-" + voice.split("-")[1] if voice.count("-") >= 2 else "en-US"
+        # HD voices pace themselves and accept only part of SSML, so send no <prosody> at the normal rate
+        body = escape(text) if pct == 0 else f'<prosody rate="{pct:+d}%">{escape(text)}</prosody>'
         ssml = (
             f'<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="{lang}">'
-            f'<voice name="{voice}"><prosody rate="{pct:+d}%">{escape(text)}</prosody></voice></speak>'
+            f'<voice name="{voice}">{body}</voice></speak>'
         )
         result = synth.speak_ssml_async(ssml).get()
         if result.reason != speechsdk.ResultReason.SynthesizingAudioCompleted:
@@ -105,6 +107,10 @@ class AzureTTS(_CachedTTS):
             raise RuntimeError(f"Azure TTS failed: {details.reason} {details.error_details}")
         # release the file handle before the caller renames the file (matters on Windows)
         del synth
+        if not words:  # this voice sent no word events: estimate the timings from the audio itself
+            with wave.open(str(out_wav), "rb") as w:
+                sig = np.frombuffer(w.readframes(w.getnframes()), dtype="<i2").astype(np.float32) / 32768
+            return align_words(sig, text)
         return words
 
 
