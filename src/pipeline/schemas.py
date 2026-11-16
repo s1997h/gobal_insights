@@ -111,6 +111,7 @@ class Narrator(BaseModel):
     voice: str
     fallback_voice: str | None = None  # used for the whole video when `voice` fails (e.g. not in this region)
     rate: float = 1.0
+    temperature: float | None = Field(default=None, ge=0.3, le=1.0)  # HD voices: how freely the voice acts
     wpm: int = 150  # measured narration pace; used to size scripts
 
 

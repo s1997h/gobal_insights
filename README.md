@@ -103,22 +103,35 @@ What happens, in order (`src/pipeline/episode/`):
 
 1. **Topic.** `--topic`, or the first backlog line that no finished run has used. The line after it is shown as
    "next video" on the end card.
-2. **Script.** The model writes a list of *beats*: a narration line plus a view (scene, object, stat, title, list,
-   checklist, duo, bars, end) and a few fields. It never places anything; `prompts/episode_script.md` holds the
-   writing rules (first line, open question and payoff, chapters, pacing, sources for every number).
-3. **Engagement gate.** `audit.py` measures the draft (first-line score, questions in the first 15 seconds, how
-   often it says "you", chapter openings, where the payoff lands, share of card shots) and a critic model reads it
-   (`prompts/episode_critic.md`). Open fixes go back to the writer, at most twice. Whatever is still open is
-   printed at the top of `REVIEW.md`.
+2. **Script.** The model first plans the story: one `hero` (a real named person or company, or "you" for a
+   what-if), what they stand to lose (`stakes`), and five candidate first lines from different angles. Then it
+   writes a list of *beats*: a narration line plus a view (scene, object, stat, title, list, checklist, duo, bars,
+   end) and a few fields. Every video follows one spine: a cold open inside the most dramatic moment, one open
+   question by the third beat, a rewind, escalation joined by "but" and "so", a cliffhanger at each chapter end,
+   the payoff, and what it means for the viewer. Narration is written for the ear (contractions, short sentences,
+   the surprising word last). `prompts/episode_script.md` holds all of it. It never places anything.
+3. **Engagement gate.** `audit.py` measures the draft: the first line's score (a stock opening like "Have you
+   ever" is capped at 35/100), whether the first three beats are a real cold open, story turns a minute, sentence
+   length, stiff uncontracted phrases, how many places the story visits and how often one person just stands in a
+   room, chapter openings, where the payoff lands. The schema rejects script labels on screen ("ACT THREE",
+   "PAYOFF", "TAKEAWAY"), a mystery card or a title card as the first shot, and text on a phone screen that is not
+   an amount. A critic model then reads it as a stranger would (`prompts/episode_critic.md`). Open fixes go back to
+   the writer, at most three times, and the draft with the fewest open fixes is kept. `REVIEW.md` shows the hero,
+   the first line and the other candidates with their scores.
 4. **Director.** `director.py` turns each beat into a shot: where people stand, the camera move, the sound
    effect, a wipe at each chapter. Placement is code, so a bad model answer cannot put anything off screen.
 5. **Voice, sound, render.** The channel's Azure voice (with a fallback voice if the first is not available in
-   your Speech region), synthesized music and effects, then Remotion in 80-second chunks.
+   your Speech region), synthesized music and effects, then Remotion in 80-second chunks. HD voices get
+   `narrator.temperature` from the style file (0.3 steady to 1.0 most expressive); company stories get their own
+   sets (lab, factory, boardroom, store, garage, stage) with the company's name on the wall and a place-and-year tag
+   whenever the story moves.
 6. **Shorts.** The model picks runs of beats that stand alone and writes a new first line and an on-screen title
    for each (`prompts/episode_shorts.md`); code checks length and overlap, then renders them vertically with
    word-by-word captions inside the Instagram and YouTube safe zone.
-7. **Package.** Three titles, thumbnail words and object, description, tags (`prompts/episode_package.md`); code
-   adds chapters, sources and the disclosure line and renders the thumbnail.
+7. **Package.** The model picks the 2-4 word phrase people would search (`keyword`), then three titles from
+   different angles, thumbnail words and object, description and tags (`prompts/episode_package.md`). Code checks
+   that the first title and the first 150 characters of the description contain the search phrase, then adds
+   chapters, sources and the disclosure line and renders the thumbnail.
 
 Output lands in `out/<channel>/<run_id>/`: `youtube/` (video.mp4, thumbnail.png, description.txt, captions.srt,
 UPLOAD.md), `shorts/` (short1.mp4 ..., covers, POSTING.md with titles, captions, hashtags and suggested times) and

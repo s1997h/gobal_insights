@@ -333,3 +333,147 @@ def test_a_failed_render_is_recorded_and_resumes(
     with session_scope(sf) as s:
         row = s.get(RunRow, ctx.run_id)
         assert row is not None and row.status == "ready_for_review"
+
+
+# ------------------------------------------------------------------------- story, hooks and labels
+def _story(beats: list[dict[str, Any]], **kw: Any) -> EpisodeScript:
+    end = {"say": "What would you have done? Tell me.", "view": "end", "label": "Next"}
+    base = {
+        "hero": "Kodak",
+        "stakes": "s",
+        "hooks": ["a", "b", "c"],
+        "promise": "p",
+        "payoff_beat": 2,
+        "comment_prompt": "c",
+    }
+    pad = [{"say": "But nobody bought it.", "view": "object", "object": "wallet"}] * max(0, 5 - len(beats))
+    return EpisodeScript.model_validate({**base, **kw, "beats": [*beats, *pad, end]})
+
+
+_LAB = {"say": "It's 1975. An engineer at Kodak holds a camera with no film.", "view": "scene", "set": "lab",
+        "people": [{"who": "leo", "pose": "hold"}], "chapter": "The camera", "where": "Rochester, 1975", "sign": "Kodak"}  # fmt: skip
+
+
+def test_script_labels_never_reach_the_screen() -> None:
+    bad = _story(
+        [
+            _LAB,
+            {
+                "say": "Here is the promise.",
+                "view": "title",
+                "big": "PROMISE",
+                "label": "what you want to know",
+            },
+            {
+                "say": "Act one.",
+                "view": "title",
+                "big": "ACT ONE",
+                "label": "who owns it?",
+                "chapter": "Act one",
+            },
+            {"say": "So they hid it.", "view": "title", "big": "FILM IS DEAD", "label": "the takeaway"},
+        ]
+    )
+    text = " ".join(bad.problems(bad.words()))
+    assert (
+        "'PROMISE'" in text
+        and "'ACT ONE'" in text
+        and "chapter 'Act one'" in text
+        and "'the takeaway'" in text
+    )
+    assert "FILM IS DEAD" not in text
+
+
+def test_the_first_beat_must_be_a_real_moment() -> None:
+    mystery = {
+        "say": "Why did Kodak hide its own camera?",
+        "view": "object",
+        "object": "mystery",
+        "chapter": "c",
+    }
+    empty = {
+        "say": "Kodak hid its own camera.",
+        "view": "scene",
+        "set": "office",
+        "people": [{}],
+        "chapter": "c",
+    }
+    assert "beat 1 must drop the viewer into the story" in _story([mystery, _LAB]).problems(30)[0]
+    assert "empty room" in _story([empty, _LAB]).problems(30)[0]
+    ok = _story([_LAB, mystery])
+    assert not [x for x in ok.problems(ok.words()) if "beat 1" in x]
+    assert any("`hero`" in x for x in _story([_LAB, mystery], hero="").problems(30))
+    assert any("`hooks`" in x for x in _story([_LAB, mystery], hooks=["one"]).problems(30))
+
+
+def test_audit_catches_a_slideshow() -> None:
+    stand = {"view": "scene", "set": "office", "people": [{"who": "you", "pose": "think"}]}
+    beats = [_LAB] + [
+        {**stand, "say": "The company did not change and it is clear that sales were not growing at all."}
+        for _ in range(9)
+    ]
+    fixes = " ".join(audit(_story(beats))["fixes"])
+    assert "one person standing still" in fixes
+    assert "scenes in a row use the same place" in fixes
+    assert "written for the page" in fixes
+    assert "list of facts" in fixes
+    good = audit(EpisodeScript.offline_example({"target_words": 1275}))
+    assert good["fixes"] == [] and good["different_places"] >= 4
+
+
+def test_a_named_company_counts_as_a_hook_subject() -> None:
+    named = hook_score(
+        "In 1975 an engineer at Kodak built a camera that needed no film, and was told to hide it."
+    )
+    vague = hook_score(
+        "Companies sometimes fail because they do not adapt to changes in technology over time."
+    )
+    assert named["total"] >= vague["total"] + 15
+
+
+def test_director_draws_company_scenes_and_keeps_text_in_bounds() -> None:
+    s = _story(
+        [
+            _LAB,
+            {"say": "Sales fell.", "view": "scene", "set": "boardroom", "people": [{"who": "maya", "pose": "point"}],
+             "scene_prop": "chart_down", "prop_text": "Film sales", "sign": "Kodak"},
+            {"say": "It filed for bankruptcy.", "view": "stat", "big": "2012", "label": "bankruptcy", "source": "Kodak, 2012"},
+            {"say": "Eighty percent.", "view": "stat", "big": "80%", "label": "share", "source": "x, 2000"},
+            {"say": "The screen says paid.", "view": "object", "object": "phone_ok", "prop_text": "975 images"},
+            {"say": "One person thinks.", "view": "scene", "set": "office", "people": [{"who": "leo", "pose": "think"}]},
+        ]
+    )  # fmt: skip
+    shots, _ = direct(s)
+    assert shots[0]["where"] == "Rochester, 1975" and shots[0]["setopt"]["sign"] == "Kodak"
+    board = shots[1]
+    assert board["setopt"] == {"sign": "Film sales", "down": True} and board["props"] == []
+    easel = direct(_story([{**_LAB, "scene_prop": "chart_down", "prop_text": "Film sales"}]))[0][0]["props"][
+        0
+    ]
+    assert easel["t"] == "chart_board" and easel["down"] and easel["label"] == "Film sales"
+    assert "count" not in shots[2]["ov"] and shots[3]["ov"]["count"] is True  # a year is never counted up to
+    assert shots[4]["props"][0]["amount"] == "20"  # words on a payment screen fall back to a plain amount
+    assert any("digits only" in x for x in s.problems(s.words()))
+    assert shots[5]["props"][0]["t"] == "desk"  # a lone figure in an office gets a desk to work at
+
+
+def test_stock_openings_never_pass_as_hooks() -> None:
+    story = hook_score(
+        "Nineteen seventy-five. A young engineer at Kodak holds a camera with no film in it, and his bosses tell him to keep quiet."
+    )
+    assert story["total"] >= 75
+    for stock in (
+        "Have you ever wondered why big companies fail?",
+        "Today we look at the story of Kodak and digital disruption.",
+        "What is disruption? Let's find out.",
+        "In this video you'll learn why Kodak failed.",
+    ):
+        assert hook_score(stock)["total"] <= 35, stock
+    assert hook_score("Kodak was a big company that made film for cameras for many years.")["total"] < 58
+
+
+def test_end_card_drops_a_repeated_next() -> None:
+    s = _story([_LAB])
+    s.beats[-1].label = "Next: How IKEA makes money"
+    shots, _ = direct(s)
+    assert shots[-1]["ov"]["next"] == "How IKEA makes money"

@@ -84,6 +84,8 @@ class Narrator:
         n = ctx.style.narrator
         self.voice, self.rate = n.voice, n.rate
         self.fallback = n.fallback_voice
+        if n.temperature is not None and hasattr(ctx.tts, "voice_params"):
+            ctx.tts.voice_params = f"temperature={n.temperature:g}"
         self.cache = ctx.cfg.root / "cache" / "tts"
         self.new_chars = 0
         self.spoke = False  # once a clip exists in one voice, the video never switches to another

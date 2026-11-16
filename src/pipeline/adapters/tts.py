@@ -12,7 +12,7 @@ import os
 import wave
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Protocol
+from typing import Any, Protocol
 from xml.sax.saxutils import escape
 
 import numpy as np
@@ -46,7 +46,8 @@ class _CachedTTS:
 
     def synth(self, text: str, voice: str, rate: float, cache_dir: Path) -> SynthResult:
         cache_dir.mkdir(parents=True, exist_ok=True)
-        key = sha(self.name, voice, f"{rate:.3f}", text)
+        extra = getattr(self, "voice_params", "") if "HD" in voice else ""
+        key = sha(self.name, voice, f"{rate:.3f}", text, *([extra] if extra else []))
         wav, meta = cache_dir / f"{key}.wav", cache_dir / f"{key}.json"
         if wav.exists() and meta.exists():
             words = [WordTiming.model_validate(w) for w in read_json(meta)["words"]]
@@ -64,6 +65,9 @@ class AzureTTS(_CachedTTS):
     """Azure Neural TTS. Word-boundary events give the word timings that drive the captions."""
 
     name = "azure"
+
+    # extra `parameters` for HD voices (e.g. "temperature=0.9"); set by the caller, part of the cache key
+    voice_params: str = ""
 
     def __init__(self, key: str | None = None, region: str | None = None):
         self.key = key or os.environ.get("AZURE_SPEECH_KEY")
@@ -97,11 +101,21 @@ class AzureTTS(_CachedTTS):
         lang = voice.split("-")[0] + "-" + voice.split("-")[1] if voice.count("-") >= 2 else "en-US"
         # HD voices pace themselves and accept only part of SSML, so send no <prosody> at the normal rate
         body = escape(text) if pct == 0 else f'<prosody rate="{pct:+d}%">{escape(text)}</prosody>'
-        ssml = (
-            f'<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="{lang}">'
-            f'<voice name="{voice}">{body}</voice></speak>'
-        )
-        result = synth.speak_ssml_async(ssml).get()
+        params = self.voice_params if "HD" in voice else ""
+
+        def speak(p: str, engine: Any = synth) -> Any:
+            attr = f' parameters="{escape(p)}"' if p else ""
+            return engine.speak_ssml_async(
+                f'<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="{lang}">'
+                f'<voice name="{voice}"{attr}>{body}</voice></speak>'
+            ).get()
+
+        result = speak(params)
+        if params and result.reason != speechsdk.ResultReason.SynthesizingAudioCompleted:
+            # this voice does not take the parameters: drop them for the rest of the run and say it plainly
+            words.clear()
+            type(self).voice_params = self.voice_params = ""
+            result = speak("")
         if result.reason != speechsdk.ResultReason.SynthesizingAudioCompleted:
             details = result.cancellation_details
             raise RuntimeError(f"Azure TTS failed: {details.reason} {details.error_details}")

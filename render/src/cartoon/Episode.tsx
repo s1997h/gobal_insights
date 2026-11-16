@@ -6,7 +6,7 @@ import {CAST} from './Cast';
 import {SETS} from './Places';
 import {PropView, type PropSpec} from './Props';
 import {FxView, type FxSpec} from './Fx';
-import {DayBadge, OverlayView, TimeBadge, parseClock, type OvSpec} from './Overlays';
+import {DayBadge, OverlayView, PlaceTag, TimeBadge, parseClock, type OvSpec} from './Overlays';
 
 /**
  * A whole cartoon episode from data: shots.json (what is on screen) and timing.json (when).
@@ -45,6 +45,8 @@ export type Shot = {
   /** wall clock for hour-by-hour stories, e.g. "9:30 AM"; also sets the light */
   clock?: string | null;
   tod?: 'dawn' | 'day' | 'dusk' | 'night' | 'sepia';
+  /** place and date of the scene, e.g. "Rochester, 1975" */
+  where?: string | null;
   /** how the shot arrives: a small punch-in (default), a wipe for a new chapter, or a plain cut */
   tr?: 'punch' | 'wipe' | 'cut';
   /** camera shake between two progress values */
@@ -85,7 +87,7 @@ const todOf = (shot: Shot): NonNullable<Shot['tod']> => {
   return h < 5 || h >= 19.5 ? 'night' : h < 7.5 ? 'dawn' : h >= 17 ? 'dusk' : 'day';
 };
 const TINT: Record<string, [string, number]> = {dawn: ['#ffcfa0', 0.16], day: ['#ffffff', 0], dusk: ['#ff9f6a', 0.2], night: ['#6f80c8', 0.34], sepia: ['#d9b178', 0.34]};
-const INDOOR_LIT = new Set(['studio', 'datacentre', 'drawer']);
+const INDOOR_LIT = new Set(['studio', 'datacentre', 'drawer', 'stage']);
 
 const Defs: React.FC = () => (
   <defs>
@@ -196,6 +198,7 @@ export const ShotView: React.FC<{shot: Shot; dur: number; prevDay: number | null
         {shot.ov && <OverlayView spec={shot.ov} t={t} p={p} dur={dur / fps} />}
         {badge && shot.day !== undefined && shot.day !== null && <DayBadge day={shot.day} prev={prevDay} t={t} />}
         {badge && shot.clock ? <TimeBadge clock={shot.clock} prev={prevClock} t={t} /> : null}
+        {badge && shot.where ? <PlaceTag text={shot.where} t={t} low={!!shot.clock} /> : null}
         <rect width={1920} height={1080} fill="url(#ep-vig)" />
         {wipe < 1 && (
           <g transform={`translate(${wipe * 2700} 0)`}>
