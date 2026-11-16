@@ -1,0 +1,42 @@
+# Style bible for "The If Lab": business and money stories, and "what if" money scenarios, as cartoons.
+palette: {bg: "#FFFAF0", gold: "#F2B84B", teal: "#2EC4B6", ink: "#2A2A2E"}
+font: Inter
+captions: {max_words_per_line: 3, highlight: gold, position: lower_third}
+# The narrator. Listen to the candidates in Azure Speech Studio's voice gallery and put your pick here.
+# HD voices exist only in some regions (East US, West Europe, Southeast Asia and a few more); if your
+# Speech resource is elsewhere, the fallback voice is used for the whole video.
+narrator:
+  provider: azure
+  voice: "en-IN-Aarti:DragonHDLatestNeural"
+  fallback_voice: "en-IN-NeerjaNeural"
+  rate: 1.0
+  wpm: 150      # after the first real run, set this to the "words a minute" figure in REVIEW.md
+formats:
+  long:  {ratio: "16:9", target_minutes: 8.5}
+  short: {ratio: "9:16", target_seconds: 40}
+banned_phrases:
+  - "in today's video"
+  - "in this video"
+  - "don't forget to like"
+  - "smash that"
+  - "welcome back"
+  - "hey guys"
+  - "let's dive in"
+voice_rules: |
+  Second person, present tense, from the first word: "You scan the code. Payment failed."
+  Warm, curious, a little wry: a smart friend telling you a story, never a lecture.
+  Short sentences. One idea per sentence. Concrete details and true numbers beat adjectives.
+  The audience is global: say "money" rather than a currency name unless a real amount needs it,
+  and "payment apps" rather than a local system's name.
+  No greeting, no sign-off, no "like and subscribe". Never address "guys" or "viewers".
+  Real companies and public history are fine. Never put words in a real person's mouth.
+  Explain how money works; never tell the viewer what to buy or sell.
+image_suffix: ""
+disclosure: "This video uses AI-generated narration and animation. It is for education, not financial advice."
+music: {volume: 0.24, tracks: []}
+story_shapes:
+  - {id: hour_by_hour,   name: "Hour by hour",      description: "One day told by the clock, from the first small failure to the night. Use `clock` on the beats."}
+  - {id: rise_and_fall,  name: "Rise and fall",     description: "A company at its peak, the one decision that looked safe, and the slow consequences. Use `past` for the history."}
+  - {id: hidden_machine, name: "The hidden machine", description: "Something ordinary the viewer buys, then how the money really moves behind it, step by step."}
+  - {id: three_paths,    name: "Three paths",       description: "Three people make three different choices with the same money; follow each one forward in time."}
+  - {id: scale_it_up,    name: "Scale it up",       description: "Start with one person, then a street, then a country: what changes at each size, and what breaks."}

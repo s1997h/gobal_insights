@@ -111,7 +111,9 @@ class Ledger:
         return usd
 
     def tts_cost(self, chars: int, provider: str = "azure") -> float:
-        p = self.prices.tts.get(provider, {})
+        # adapter names can carry a version or settings suffix ("kokoro2", "openai-1a2b3c4d")
+        base = provider.split("-")[0].rstrip("0123456789")
+        p = self.prices.tts.get(provider) or self.prices.tts.get(base, {})
         free = p.get("free_chars_per_month", 0.0)
         already = self.month_units(f"tts:{provider}")
         billable = max(0.0, (already + chars) - max(free, already))

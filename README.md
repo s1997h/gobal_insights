@@ -88,6 +88,74 @@ Rendering is the slow part and is CPU-bound. On a 2-core machine Remotion render
 
 `config/channels/whatif.yaml` sets `budget: {per_video_usd: 8, per_month_usd: 150}`. Every paid call checks the cap *before* it runs and stops the run if it would go over; `pipeline resume` continues once you raise the cap. **The prices in `config/prices.yaml` are placeholders: check each against the provider's pricing page before relying on the caps.**
 
+## Cartoon episodes (automatic)
+
+One command takes a topic to a finished cartoon video, its Shorts, a thumbnail and the upload kit:
+
+```bash
+pipeline episode --channel iflab                      # the next line of config/channels/iflab/backlog.md
+pipeline episode --channel iflab --topic "How airlines really make money"
+pipeline episode --channel iflab --offline --quick    # free rehearsal: placeholder script, beep voice, real render
+pipeline resume <run_id>                              # continue a failed run; finished steps are not paid for again
+```
+
+What happens, in order (`src/pipeline/episode/`):
+
+1. **Topic.** `--topic`, or the first backlog line that no finished run has used. The line after it is shown as
+   "next video" on the end card.
+2. **Script.** The model writes a list of *beats*: a narration line plus a view (scene, object, stat, title, list,
+   checklist, duo, bars, end) and a few fields. It never places anything; `prompts/episode_script.md` holds the
+   writing rules (first line, open question and payoff, chapters, pacing, sources for every number).
+3. **Engagement gate.** `audit.py` measures the draft (first-line score, questions in the first 15 seconds, how
+   often it says "you", chapter openings, where the payoff lands, share of card shots) and a critic model reads it
+   (`prompts/episode_critic.md`). Open fixes go back to the writer, at most twice. Whatever is still open is
+   printed at the top of `REVIEW.md`.
+4. **Director.** `director.py` turns each beat into a shot: where people stand, the camera move, the sound
+   effect, a wipe at each chapter. Placement is code, so a bad model answer cannot put anything off screen.
+5. **Voice, sound, render.** The channel's Azure voice (with a fallback voice if the first is not available in
+   your Speech region), synthesized music and effects, then Remotion in 80-second chunks.
+6. **Shorts.** The model picks runs of beats that stand alone and writes a new first line and an on-screen title
+   for each (`prompts/episode_shorts.md`); code checks length and overlap, then renders them vertically with
+   word-by-word captions inside the Instagram and YouTube safe zone.
+7. **Package.** Three titles, thumbnail words and object, description, tags (`prompts/episode_package.md`); code
+   adds chapters, sources and the disclosure line and renders the thumbnail.
+
+Output lands in `out/<channel>/<run_id>/`: `youtube/` (video.mp4, thumbnail.png, description.txt, captions.srt,
+UPLOAD.md), `shorts/` (short1.mp4 ..., covers, POSTING.md with titles, captions, hashtags and suggested times) and
+`REVIEW.md`. **Read REVIEW.md before posting:** it lists every factual claim with the source the model gave. The
+model can be wrong, and nothing is published automatically.
+
+A channel needs `config/channels/<id>.yaml`, a style file (voice, target length, voice rules, story shapes) and
+`config/channels/<id>/backlog.md` (one `Title | angle` per line). An 8.5-minute episode with four Shorts takes
+about 50 minutes on 2 CPU cores and costs well under a dollar in model and voice calls.
+
+## Cartoon episodes (hand-directed)
+
+An episode is a shot list in `episodes/<name>/shots.py`: for every shot, the narration line, the set, actors with
+poses and expressions, props, effects, a stat or chart overlay and a camera move. One command voices it, renders it
+in the doodle-cartoon style (`render/src/cartoon/Episode.tsx`) and writes the upload kit:
+
+```bash
+tools/episode/make.sh episodes/phone-30-days                       # free local voice (Kokoro)
+tools/episode/make.sh episodes/phone-30-days elevenlabs <voice-id>  # most human-sounding
+tools/episode/make.sh episodes/phone-30-days openai coral           # gpt-4o-mini-tts, steerable
+```
+
+Output lands in `episodes/<name>/out/`: the MP4 (1080p, -14 LUFS), `thumbnail.png`, `captions.srt` and
+`upload.md` (title, description with chapters and sources, tags). Voice lines are cached, so changing one shot
+re-voices only that shot. Rendering takes about 25 minutes for 8.5 minutes of video on 2 CPU cores.
+
+### Voices
+
+| Provider | Sounds | Cost | Needs |
+|---|---|---|---|
+| `elevenlabs` | most human; exact word timings | Starter plan, about $6 a month for ~30 minutes (commercial licence) | `ELEVENLABS_API_KEY`, a voice id |
+| `openai` | natural, steerable with plain-English direction | about $0.015 a minute | `OPENAI_API_KEY` |
+| `azure` | natural; word timings | free tier 0.5M characters a month | `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION` |
+| `kokoro` | good, a little flat | free, runs on the CPU | model files in `KOKORO_DIR` (links in `adapters/tts.py`) |
+
+Set the pipeline's voice with `tts.provider` in `config/models.yaml` and `narrator.voice` in the channel style.
+
 ## Project layout
 
 ```

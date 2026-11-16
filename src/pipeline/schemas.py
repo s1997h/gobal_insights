@@ -109,6 +109,7 @@ class CaptionStyle(BaseModel):
 class Narrator(BaseModel):
     provider: str = "azure"
     voice: str
+    fallback_voice: str | None = None  # used for the whole video when `voice` fails (e.g. not in this region)
     rate: float = 1.0
     wpm: int = 150  # measured narration pace; used to size scripts
 

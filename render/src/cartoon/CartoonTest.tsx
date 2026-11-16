@@ -1,19 +1,12 @@
 import React from 'react';
 import {AbsoluteFill, Sequence, interpolate, useCurrentFrame, useVideoConfig} from 'remotion';
-import {Character, type Look} from './Character';
+import {Character} from './Character';
+import {CAST} from './Cast';
 import {Car, ParkingLot, Vignette} from './Sets';
 
 /** A two-shot style test: the cast, a set, a prop, walking, reactions and a zombie. */
 
-export const CAST: Record<string, Look> = {
-  you: {skin: '#f2e8dc', hair: 'short', hairColor: '#3b2a20', top: 'hoodie', topColor: '#3aa59b', pants: '#2f3a4f'},
-  maya: {skin: '#f2e8dc', hair: 'long', hairColor: '#6b4529', top: 'hoodie', topColor: '#2f4a7a', pants: '#262b36'},
-  leo: {skin: '#f2e8dc', hair: 'curly', hairColor: '#7a4a2a', top: 'sweater', topColor: '#4f7a43', pants: '#2b3242'},
-  zoe: {skin: '#f2e8dc', hair: 'ponytail', hairColor: '#c8692e', top: 'hoodie', topColor: '#6a4f8f', pants: '#2b3242'},
-  sam: {skin: '#f2e8dc', hair: 'spiky', hairColor: '#2a2522', top: 'sweater', topColor: '#2f4a7a', pants: '#262b36', glasses: true},
-  ana: {skin: '#f2e8dc', hair: 'bob', hairColor: '#2a2220', top: 'tee', topColor: '#b5524a', pants: '#3a3f4a'},
-  zombie: {skin: '#a8bf92', hair: 'short', hairColor: '#3a3f2a', top: 'tee', topColor: '#6d6a5e', pants: '#3b3d33', torn: true},
-};
+export {CAST};
 
 const Camera: React.FC<{from: number; to: number; dur: number; children: React.ReactNode}> = ({from, to, dur, children}) => {
   const f = useCurrentFrame();
