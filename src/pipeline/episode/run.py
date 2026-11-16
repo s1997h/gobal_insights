@@ -28,12 +28,12 @@ from ..ledger import BudgetExceeded
 from ..prompts import banned_text, render_prompt
 from ..util import fmt_timestamp, read_json, slugify, utcnow, write_json
 from . import produce
-from .audit import audit
+from .audit import audit, hook_score
 from .caps import caption_tokens, srt
 from .director import direct, direct_hook
 from .schemas import VIEW_GUIDE, EpisodeCritique, EpisodePackage, EpisodeScript, ShortsPlan
 
-MAX_REWRITES = 2
+MAX_REWRITES = 3
 SHORT_MAX_SEC = 58.0
 DONE_STATUSES = ("ready_for_review", "approved")
 Shot = dict[str, Any]
@@ -131,6 +131,7 @@ def write_script(ctx: RunContext, topic: dict[str, Any], target: int) -> tuple[E
 
     fixes: list[str] = []
     draft: EpisodeScript | None = None
+    best: tuple[int, EpisodeScript, list[str], int] | None = None  # (open fixes, draft, fixes, attempt)
     history: list[dict[str, Any]] = []
     for attempt in range(1, MAX_REWRITES + 2):
         ask: dict[str, Any] = {
@@ -167,14 +168,19 @@ def write_script(ctx: RunContext, topic: dict[str, Any], target: int) -> tuple[E
             f"gate: draft {attempt}: {words} words, hook {report['hook']['total']}/100, critic {critic.hook_score}/10, "
             f"{len(fixes)} fix(es) open"
         )
+        if best is None or len(fixes) < best[0]:
+            best = (len(fixes), draft, fixes, attempt)
         if not fixes:
             break
-    assert draft is not None
+    assert draft is not None and best is not None
+    if best[1] is not draft:  # a rewrite can make things worse: ship the draft with the fewest open fixes
+        ctx.log(f"gate: keeping draft {best[3]} ({best[0]} open fix(es)), the best of {len(history)}")
+    _, draft, fixes, kept = best
     gate = {
         "passed": not fixes,
         "attempts": len(history),
         "open_fixes": fixes,
-        **history[-1],
+        **history[kept - 1],
         "history": history,
     }
     write_json(p.script("long"), draft.model_dump())
@@ -315,11 +321,25 @@ def write_package(ctx: RunContext, topic: str, script: EpisodeScript) -> Episode
         ]
         if len(pk.description) < 120:
             errs.append("the description needs at least 120 characters")
+        kw = [w for w in re.findall(r"[a-z0-9']+", pk.keyword.lower()) if len(w) > 2]
+        if not 2 <= len(pk.keyword.split()) <= 5:
+            errs.append("`keyword` is the 2-4 word phrase people type into search for this video")
+        else:
+            missing = [w for w in kw if w not in pk.titles[0].lower()]
+            if missing:
+                errs.append(
+                    f"the first title must contain the search phrase {pk.keyword!r}; missing {missing}"
+                )
+            if any(w not in pk.description[:160].lower() for w in kw):
+                errs.append(
+                    f"the first 150 characters of the description must contain the search phrase {pk.keyword!r}"
+                )
         return errs
 
     system = render_prompt(ctx.cfg.root, "episode_package", channel_name=ctx.channel.name)
     ask = {
         "TOPIC": topic,
+        "HERO": script.hero,
         "PROMISE": script.promise,
         "COMMENT QUESTION": script.comment_prompt,
         "NARRATION": " ".join(b.say for b in script.beats),
@@ -463,6 +483,15 @@ def export(
         f"(narrator.wpm in the style file is {ctx.style.narrator.wpm}; set it to the measured figure)",
         f"- Engagement gate: {'passed' if gate['passed'] else 'NOT passed'} after {gate['attempts']} draft(s). "
         f"Opening line {a['hook']['total']}/100, critic {gate['critic']['hook_score']}/10.",
+        f"- Hero: {script.hero or '(not set)'}. At stake: {script.stakes or '(not set)'}",
+        f'- First line: "{script.beats[0].say}"',
+        *[
+            f'  - other candidate ({hook_score(h)["total"]}/100): "{h}"'
+            for h in script.hooks
+            if h.strip() != script.beats[0].say.strip()
+        ],
+        f"- Story: {a.get('story_turns_per_minute', 0)} turns a minute, {a.get('different_places', 0)} places, "
+        f"{a.get('avg_words_per_sentence', 0)} words a sentence.",
         f"- Promise: {script.promise} Answered at beat {script.payoff_beat} ({a['payoff_at_fraction']:.0%} of the way in).",
         f"- Shorts made: {len(shorts)}",
         "",

@@ -10,10 +10,13 @@ Picking the run:
 - The Shorts do not overlap, and each is about a different idea. At most one of them may give away the video's main answer (the payoff beat).
 
 Writing the opening beat (`hook`):
-- One or two sentences, 12 to 26 words, written for a cold viewer: a concrete moment or number, addressed to "you", ending on a question or an unfinished thought that the run then answers.
+- One or two sentences, 10 to 24 words, written for a viewer with a thumb on the screen. The first five words must already be the surprise: a name and what they did, an amount, an impossible-sounding fact. End on a question or an unfinished thought that the run then answers.
+- Good shapes: "[Company] invented [thing]. Then they hid it." / "[Amount]. That's what one decision cost [company]." / "You [ordinary action] every day without knowing who gets paid."
+- Never open with "Did you know", "Imagine", "Here's why", a greeting, or a question the viewer has no reason to care about yet.
+- Write it to be spoken: contractions, short sentences.
 - Do not reuse the long video's first line.
 - Numbers as spoken words. Say "money" rather than a currency name; say "payment apps" rather than a local system's name.
-- Give it a picture with the same fields the video uses. Prefer `object` or `scene`:
+- Give it a picture with the same fields the video uses: a `scene` with people doing something, or an `object` (never `mystery`, never a card):
 {view_guide}
 
 On-screen title (`title_lines`): two or three lines, each 20 characters at most, different words from the spoken hook. It is the reason to stop scrolling: a contradiction or a question, not a label. Put one or two of its words in `highlight`.

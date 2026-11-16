@@ -1,5 +1,6 @@
 import React from 'react';
 import {INK, darken} from './Character';
+import {BIZ_SETS} from './BizSets';
 import {MONEY_SETS} from './MoneySets';
 
 /**
@@ -450,4 +451,5 @@ export const SETS: Record<string, React.FC<SetProps>> = {
   shower: (props) => <Bathroom {...props} opt={{...props.opt, shower: true}} />,
   drawer: Drawer,
   ...MONEY_SETS,
+  ...BIZ_SETS,
 };

@@ -80,7 +80,7 @@ const Stat: React.FC<P> = ({spec, t}) => {
   const big = spec.big as string;
   const num = parseFloat(big.replace(/[^0-9.]/g, ''));
   const suffix = big.replace(/[0-9.,]/g, '');
-  const shown = spec.count && !Number.isNaN(num) ? `${Math.round(num * ease(t / 1.2))}${suffix}` : big;
+  const shown = spec.count && !Number.isNaN(num) && !/^\d{4}$/.test(String(big).trim()) ? `${Math.round(num * ease(t / 1.2))}${suffix}` : big;
   const lines = wrap(spec.label as string, 26);
   const sub = spec.sub as string | undefined;
   const h = 330 + lines.length * 52 + (sub ? 50 : 0) + (spec.src ? 40 : 0);
@@ -645,6 +645,21 @@ export const TimeBadge: React.FC<{clock: string; prev: string | null; t: number}
       <text x={104} y={74} fontFamily={FONT} fontWeight={900} fontSize={62} fill={INK} letterSpacing={-1}>{clock}</text>
       <rect x={28} y={92} width={374} height={18} rx={9} fill="#e3ddd0" stroke={INK} strokeWidth={3} />
       {frac > 0 && <rect x={28} y={92} width={Math.max(18, 374 * frac)} height={18} rx={9} fill={RED} stroke={INK} strokeWidth={3} />}
+    </g>
+  );
+};
+
+/** Where and when a scene happens ("ROCHESTER, 1975"): slides in at the top left, under the clock if there is one. */
+export const PlaceTag: React.FC<{text: string; t: number; low?: boolean}> = ({text, t, low}) => {
+  const q = clamp(t * 3.5);
+  const label = text.toUpperCase().slice(0, 28);
+  const w = Math.max(220, label.length * 31 + 96);
+  return (
+    <g transform={`translate(${70 - (1 - q) * (w + 90)} ${low ? 214 : 60})`}>
+      <rect x={6} y={8} width={w} height={84} rx={14} fill="#000" opacity={0.25} />
+      <rect x={0} y={0} width={w} height={84} rx={14} fill={NAVY} {...k} strokeWidth={5} />
+      <rect x={0} y={0} width={22} height={84} rx={8} fill={GOLD} stroke={INK} strokeWidth={5} />
+      <text x={50} y={57} fontFamily={FONT} fontWeight={900} fontSize={46} fill={CREAM} letterSpacing={1}>{label}</text>
     </g>
   );
 };

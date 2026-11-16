@@ -10,6 +10,9 @@ narrator:
   voice: "en-IN-Aarti:DragonHDLatestNeural"
   fallback_voice: "en-IN-NeerjaNeural"
   rate: 1.0
+  # HD voices only: how freely the voice acts the lines, 0.3 (steady) to 1.0 (most expressive). Leave it
+  # out to use the voice's own default. If the voice rejects it, the run carries on without it.
+  temperature: 0.9
   wpm: 150      # after the first real run, set this to the "words a minute" figure in REVIEW.md
 formats:
   long:  {ratio: "16:9", target_minutes: 8.5}
@@ -22,10 +25,21 @@ banned_phrases:
   - "welcome back"
   - "hey guys"
   - "let's dive in"
+  - "have you ever wondered"
+  - "imagine a world"
+  - "did you know"
+  - "buckle up"
+  - "it is important to note"
+  - "at the end of the day"
+  - "little did they know"
+  - "the rest is history"
 voice_rules: |
-  Second person, present tense, from the first word: "You scan the code. Payment failed."
-  Warm, curious, a little wry: a smart friend telling you a story, never a lecture.
-  Short sentences. One idea per sentence. Concrete details and true numbers beat adjectives.
+  A storyteller, not a presenter: a smart friend telling you something they can't believe you haven't heard.
+  True stories follow one named person or company, told as it happens: "It's 1975. A young engineer walks into
+  the meeting holding a camera with no film in it." What-ifs put the viewer in it: "You scan the code. Payment failed."
+  Either way, turn to the viewer at every twist: "You'd have said no too."
+  Spoken English: contractions always (don't, it's, you're), short sentences, the surprising word last.
+  Warm, curious, a little wry. Concrete details and true numbers beat adjectives.
   The audience is global: say "money" rather than a currency name unless a real amount needs it,
   and "payment apps" rather than a local system's name.
   No greeting, no sign-off, no "like and subscribe". Never address "guys" or "viewers".
@@ -36,7 +50,7 @@ disclosure: "This video uses AI-generated narration and animation. It is for edu
 music: {volume: 0.24, tracks: []}
 story_shapes:
   - {id: hour_by_hour,   name: "Hour by hour",      description: "One day told by the clock, from the first small failure to the night. Use `clock` on the beats."}
-  - {id: rise_and_fall,  name: "Rise and fall",     description: "A company at its peak, the one decision that looked safe, and the slow consequences. Use `past` for the history."}
-  - {id: hidden_machine, name: "The hidden machine", description: "Something ordinary the viewer buys, then how the money really moves behind it, step by step."}
+  - {id: rise_and_fall,  name: "Rise and fall",     description: "Open on the moment the company could have saved itself and did not. Rewind to its peak, then the one decision that looked safe, then each consequence, each worse than the last. Use `past` and `where` for the history."}
+  - {id: hidden_machine, name: "The hidden machine", description: "Open on the viewer paying for something ordinary. Then follow that money through each hand that takes a cut, ending on the one nobody expects."}
   - {id: three_paths,    name: "Three paths",       description: "Three people make three different choices with the same money; follow each one forward in time."}
   - {id: scale_it_up,    name: "Scale it up",       description: "Start with one person, then a street, then a country: what changes at each size, and what breaks."}

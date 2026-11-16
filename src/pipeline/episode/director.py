@@ -8,9 +8,10 @@ screen or a card over a face.
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
-from .schemas import Beat, EpisodeScript, Person
+from .schemas import BIZ_SETS, Beat, EpisodeScript, Person
 
 GROUND = 1000
 Shot = dict[str, Any]
@@ -24,6 +25,9 @@ _RIGHT_PROPS: dict[str, tuple[int, dict[str, Any]]] = {
     "veg_cart": (1500, {}),
     "shutter": (1280, {"s": 0.92, "close": 0.12}),
     "sign": (1400, {}),
+    "product": (1450, {}),
+    "chart_up": (1480, {}),
+    "chart_down": (1480, {"down": True}),
 }
 _COUNTER_X = {"kirana": 1470, "pub": 1400}
 
@@ -110,6 +114,17 @@ def _scene(b: Beat, i: int) -> Shot:
         s["cam"] = [1.0, 1.06, 800, 700]
         return s
 
+    if place in BIZ_SETS:
+        s["setopt"] = {"sign": (b.sign or "")[:14], "down": prop == "chart_down"}
+        if place == "boardroom" and prop in ("chart_up", "chart_down"):
+            # the boardroom's wall screen is the chart; a second one on an easel would repeat it
+            s["setopt"]["sign"] = (b.prop_text or b.sign or "")[:14]
+            prop = "none"
+    elif place in ("studio", "office") and prop == "none" and len(people) == 1:
+        # one person in an empty room reads as a slide; give them something to do
+        return _scene(b.model_copy(update={"scene_prop": "desk"}), i) if place == "office" else {
+            **s, "actors": [_actor(people[0], 960)], "props": [], "cam": [1.0, 1.1, 960, 520] if i % 2 == 0 else [1.1, 1.0, 960, 520],
+        }  # fmt: skip
     counter = _COUNTER_X.get(place)
     if counter is not None:  # the last person stands behind the counter
         if len(people) >= 2:
@@ -155,6 +170,10 @@ def _scene(b: Beat, i: int) -> Shot:
             **extra,
         }
         text = _pipes(b.prop_text)
+        if prop in ("chart_up", "chart_down"):
+            spec.update(t="chart_board", label=(b.prop_text or "")[:14])
+        elif prop == "product":
+            spec["label"] = (b.prop_text or b.sign or "")[:12]
         if prop == "atm":
             spec["screen"] = text or "OUT OF|SERVICE"
         elif prop == "petrol_pump" and text:
@@ -195,7 +214,7 @@ def _object(b: Beat) -> Shot:
             "ok": ok,
             "tilt": 0 if solo else -4,
         }
-        spec["amount"] = text[:8] or "20"
+        spec["amount"] = text[:8] if re.fullmatch(r"[\d,. ]{1,8}", text) else "20"
         if b.label:
             spec["to"] = b.label[:16]
         s["props"] = [spec]
@@ -218,7 +237,13 @@ def _object(b: Beat) -> Shot:
         ]  # fmt: skip
         sfx = ["whoosh@0.5"] if o == "mystery" else ["tick@0.15", "tick@0.4"]
     elif o in ("balance", "balance_locked"):
-        spec = {"t": "balance", "x": x, "y": 540, "s": 1.2 if solo else 0.9, "amount": text[:10] or "42,318"}
+        spec = {
+            "t": "balance",
+            "x": x,
+            "y": 540,
+            "s": 1.2 if solo else 0.9,
+            "amount": text[:10] if re.fullmatch(r"[\d,. ]{1,10}", text) else "42,318",
+        }
         if o == "balance_locked":
             spec["at"] = 0.4
             sfx = ["thud@0.4"]
@@ -246,7 +271,8 @@ def _card(b: Beat) -> Shot:
             ov["sub"] = b.sub
         if b.source:
             ov["src"] = f"Source: {b.source}"
-        if b.big and b.big.rstrip("%").isdigit():
+        # count up to a percentage or a quantity, never to a year
+        if b.big and b.big.rstrip("%").isdigit() and not re.fullmatch(r"(1[5-9]|20)\d\d", b.big):
             ov["count"] = True
         s.update(actors=[_narrator(b, 430, "point", "neutral")], ov=ov, sfx=["pop@0.25"])
     elif v == "title":
@@ -289,7 +315,11 @@ def _card(b: Beat) -> Shot:
         s.update(
             actors=[{"who": "you", "pose": "wave", "expr": "joy", "x": 960, "y": GROUND}],
             fx=[{"t": "coins", "x": 960, "y": 620, "from": 0.3}],
-            ov={"t": "end", "pos": "center", "next": (b.label or "")[:60]},
+            ov={
+                "t": "end",
+                "pos": "center",
+                "next": re.sub(r"^\s*(next( up| video)?)\s*[:\-–]\s*", "", b.label or "", flags=re.I)[:60],
+            },
             sfx=["ding@0.3"],
             min=5.5,
         )
@@ -312,6 +342,8 @@ def direct(script: EpisodeScript, prefix: str = "b") -> tuple[list[Shot], list[l
             shot["clock"] = timeline
         if b.past:
             shot["tod"] = "sepia"
+        if b.where and b.view == "scene":
+            shot["where"] = b.where[:28]
         if b.chapter or i == 0:
             chapters.append([sid, b.chapter or "Intro"])
             if i > 0:
