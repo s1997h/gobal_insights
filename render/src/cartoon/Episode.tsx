@@ -6,7 +6,7 @@ import {CAST} from './Cast';
 import {SETS} from './Places';
 import {PropView, type PropSpec} from './Props';
 import {FxView, type FxSpec} from './Fx';
-import {DayBadge, OverlayView, type OvSpec} from './Overlays';
+import {DayBadge, OverlayView, TimeBadge, parseClock, type OvSpec} from './Overlays';
 
 /**
  * A whole cartoon episode from data: shots.json (what is on screen) and timing.json (when).
@@ -42,6 +42,13 @@ export type Shot = {
   fx?: FxSpec[];
   ov?: OvSpec;
   min?: number;
+  /** wall clock for hour-by-hour stories, e.g. "9:30 AM"; also sets the light */
+  clock?: string | null;
+  tod?: 'dawn' | 'day' | 'dusk' | 'night' | 'sepia';
+  /** how the shot arrives: a small punch-in (default), a wipe for a new chapter, or a plain cut */
+  tr?: 'punch' | 'wipe' | 'cut';
+  /** camera shake between two progress values */
+  shake?: [number, number];
 };
 
 export type EpisodeProps = {
@@ -71,6 +78,14 @@ export const calcEpisode: CalculateMetadataFunction<EpisodeProps> = ({props}) =>
 
 const ease = (x: number) => (x < 0 ? 0 : x > 1 ? 1 : x * x * (3 - 2 * x));
 const scaleFor = (set: string) => (set === 'studio' ? 1.85 : 1.55);
+const todOf = (shot: Shot): NonNullable<Shot['tod']> => {
+  if (shot.tod) return shot.tod;
+  if (!shot.clock) return 'day';
+  const h = parseClock(shot.clock);
+  return h < 5 || h >= 19.5 ? 'night' : h < 7.5 ? 'dawn' : h >= 17 ? 'dusk' : 'day';
+};
+const TINT: Record<string, [string, number]> = {dawn: ['#ffcfa0', 0.16], day: ['#ffffff', 0], dusk: ['#ff9f6a', 0.2], night: ['#6f80c8', 0.34], sepia: ['#d9b178', 0.34]};
+const INDOOR_LIT = new Set(['studio', 'datacentre', 'drawer']);
 
 const Defs: React.FC = () => (
   <defs>
@@ -103,7 +118,10 @@ const Actor: React.FC<{a: ActorSpec; t: number; p: number; i: number; base: numb
     if (a.face === undefined) facing = moving ? Math.sign(a.walk[1] - a.walk[0]) : 0;
     if (!moving && pose === 'walk') pose = 'stand';
   }
+  const sit = pose.startsWith('sit');
   return (
+    <g>
+      {!sit && <ellipse cx={x} cy={(a.y ?? 1000) + 4} rx={46 * (a.s ?? 1) * base} ry={9 * (a.s ?? 1) * base} fill="#000" opacity={0.2} />}
     <Character
       look={CAST[a.who] ?? CAST.you}
       pose={pose}
@@ -119,6 +137,7 @@ const Actor: React.FC<{a: ActorSpec; t: number; p: number; i: number; base: numb
       glow={a.glow}
       bare={a.nude}
     />
+    </g>
   );
 };
 
@@ -128,17 +147,25 @@ const actorPos = (a: ActorSpec, p: number) => {
   return a.walk[0] + (a.walk[1] - a.walk[0]) * ease(Math.min(1, p / Math.max(0.05, end)));
 };
 
-const ShotView: React.FC<{shot: Shot; dur: number; prevDay: number | null}> = ({shot, dur, prevDay}) => {
+export const ShotView: React.FC<{shot: Shot; dur: number; prevDay: number | null; badge?: boolean; prevClock?: string | null; first?: boolean}> = ({shot, dur, prevDay, badge = true, prevClock = null, first = false}) => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
   const t = frame / fps;
   const p = Math.min(1, frame / Math.max(1, dur - 1));
   const Set = SETS[shot.set] ?? SETS.studio;
   const cam = shot.cam ?? [1, 1];
-  const z = cam[0] + (cam[1] - cam[0]) * ease(p);
+  const tr = shot.tr ?? (first ? 'cut' : 'punch');
+  const kick = tr === 'cut' ? 0 : Math.pow(1 - Math.min(1, frame / 8), 2);
+  const z = (cam[0] + (cam[1] - cam[0]) * ease(p)) * (1 + 0.045 * kick);
+  const tod = todOf(shot);
+  const [tintC, tintA] = INDOOR_LIT.has(shot.set) ? TINT.day : TINT[tod];
+  const shaking = shot.shake && p >= shot.shake[0] && p <= shot.shake[1];
+  const sx = shaking ? Math.sin(frame * 2.3) * 9 : 0;
+  const sy = shaking ? Math.cos(frame * 3.1) * 7 : 0;
+  const wipe = tr === 'wipe' ? Math.min(1, frame / 11) : 1;
   const fx = cam[2] ?? 960;
   const fy = cam[3] ?? 600;
-  const opt = shot.setopt ?? {};
+  const opt = {tod, ...(shot.setopt ?? {})};
   const props = shot.props ?? [];
   const behind = props.filter((pr) => !pr.front);
   const front = props.filter((pr) => pr.front);
@@ -149,7 +176,7 @@ const ShotView: React.FC<{shot: Shot; dur: number; prevDay: number | null}> = ({
     <AbsoluteFill>
       <svg viewBox="0 0 1920 1080" width="100%" height="100%">
         <Defs />
-        <g transform={`translate(${fx} ${fy}) scale(${z}) translate(${-fx} ${-fy})`}>
+        <g transform={`translate(${fx + sx} ${fy + sy}) scale(${z}) translate(${-fx} ${-fy})`}>
           <Set opt={opt} t={t} p={p} layer="bg" />
           {behind.map((pr, i) => (
             <PropView key={`b${i}`} spec={pr} t={t} p={p} fps={fps} />
@@ -161,13 +188,22 @@ const ShotView: React.FC<{shot: Shot; dur: number; prevDay: number | null}> = ({
             <PropView key={`f${i}`} spec={pr} t={t} p={p} fps={fps} />
           ))}
           <Set opt={opt} t={t} p={p} layer="fg" />
+          {tintA > 0 && <rect x={-200} y={-200} width={2320} height={1480} fill={tintC} opacity={tintA} style={{mixBlendMode: 'multiply'}} />}
           {(shot.fx ?? []).map((f, i) => (
             <FxView key={i} spec={f} t={t} p={p} dur={dur / fps} follow={f.follow ? follow : undefined} />
           ))}
         </g>
         {shot.ov && <OverlayView spec={shot.ov} t={t} p={p} dur={dur / fps} />}
-        {shot.day !== undefined && shot.day !== null && <DayBadge day={shot.day} prev={prevDay} t={t} />}
+        {badge && shot.day !== undefined && shot.day !== null && <DayBadge day={shot.day} prev={prevDay} t={t} />}
+        {badge && shot.clock ? <TimeBadge clock={shot.clock} prev={prevClock} t={t} /> : null}
         <rect width={1920} height={1080} fill="url(#ep-vig)" />
+        {wipe < 1 && (
+          <g transform={`translate(${wipe * 2700} 0)`}>
+            <path d="M -700 0 L 1920 0 L 2200 1080 L -700 1080 Z" fill="#0b1b33" />
+            <path d="M 1920 0 L 2060 0 L 2340 1080 L 2200 1080 Z" fill="#f2b84b" />
+            <path d="M -840 0 L -700 0 L -420 1080 L -560 1080 Z" fill="#f2b84b" transform="translate(-0 0)" />
+          </g>
+        )}
       </svg>
     </AbsoluteFill>
   );
@@ -177,6 +213,7 @@ export const Episode: React.FC<EpisodeProps> = ({shots, timing}) => {
   const {fps, durationInFrames} = useVideoConfig();
   ensureFonts();
   let prevDay: number | null = null;
+  let prevClock: string | null = null;
   return (
     <AbsoluteFill style={{backgroundColor: '#0b1b33', fontFamily: 'Inter'}}>
       {shots.map((shot, i) => {
@@ -187,9 +224,11 @@ export const Episode: React.FC<EpisodeProps> = ({shots, timing}) => {
         const dur = Math.max(1, end - from);
         const pd = prevDay;
         if (shot.day !== undefined && shot.day !== null) prevDay = shot.day;
+        const pc = prevClock;
+        if (shot.clock) prevClock = shot.clock;
         return (
           <Sequence key={shot.id} from={from} durationInFrames={dur} layout="none">
-            <ShotView shot={shot} dur={dur} prevDay={pd} />
+            <ShotView shot={shot} dur={dur} prevDay={pd} prevClock={pc} first={i === 0} />
           </Sequence>
         );
       })}

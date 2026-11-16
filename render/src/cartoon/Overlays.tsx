@@ -142,9 +142,9 @@ const Rules: React.FC<P> = ({spec, p}) => {
           <g key={i} transform={`translate(0 ${(i - 1) * 170}) scale(${pop(q)}) rotate(${(i - 1) * -2})`}>
             <rect x={-330} y={-66} width={660} height={132} rx={30} fill={CREAM} {...k} strokeWidth={5} />
             <g transform="translate(-250 0) scale(0.95)">
-              <Icon name="cross" />
+              <Icon name={spec.ok ? 'check' : 'cross'} />
             </g>
-            <text x={-180} y={22} fontFamily={FONT} fontWeight={900} fontSize={64} fill={INK}>
+            <text x={-180} y={22} fontFamily={FONT} fontWeight={900} fontSize={Math.min(64, Math.floor(480 / (it.length * 0.56)))} fill={INK}>
               {it}
             </text>
           </g>
@@ -241,7 +241,8 @@ const Line: React.FC<P> = ({spec, t}) => {
   );
 };
 
-const Duo: React.FC<P> = ({spec, t}) => {
+const Duo: React.FC<P> = ({spec, t, p}) => {
+  const gapSec = Math.min(1.6, (p > 0.001 ? t / p : 5) * 0.3); // the second side arrives sooner in a short shot
   const a = spec.a as {big: string; label: string};
   const b = spec.b as {big: string; label: string};
   return (
@@ -249,7 +250,7 @@ const Duo: React.FC<P> = ({spec, t}) => {
       <Card w={1300} h={620}>
         <text x={0} y={-220} textAnchor="middle" fontFamily={FONT} fontWeight={800} fontSize={44} fill={INK}>{spec.head as string}</text>
         {[a, b].map((c, i) => {
-          const q = clamp((t - 0.6 - i * 1.6) * 3);
+          const q = clamp((t - 0.6 - i * gapSec) * 3);
           return q > 0 ? (
             <g key={i} transform={`translate(${(i - 0.5) * 600} 30) scale(${pop(q)})`}>
               <text x={0} y={30} textAnchor="middle" fontFamily={FONT} fontWeight={900} fontSize={170} fill={i === 0 ? RED : TEAL} stroke={INK} strokeWidth={8} paintOrder="stroke" letterSpacing={-4}>{c.big}</text>
@@ -344,20 +345,24 @@ const Days: React.FC<P> = ({spec, t}) => {
   );
 };
 
-const Bars: React.FC<P> = ({spec, t}) => {
+const Bars: React.FC<P> = ({spec, t, p}) => {
   const bars = spec.bars as {l: string; v: number; txt: string; static?: boolean; hot?: boolean}[];
   const max = (spec.max as number) ?? Math.max(...bars.map((b) => b.v));
   const W = 1200;
   const H = 420;
-  const bw = 220;
+  const n = bars.length;
+  const gap = n <= 3 ? 340 : 280;
+  const bw = n <= 3 ? 220 : 190;
+  const dur = p > 0.001 ? t / p : 6;
+  const step = Math.min(1.6, (dur * 0.55) / Math.max(1, n - 1)); // every bar is up by about 60% of the shot
   return (
     <g transform={`scale(${pop(clamp(t * 3))})`}>
       <Card w={W + 80} h={H + 270}>
         <text x={0} y={-H / 2 - 40} textAnchor="middle" fontFamily={FONT} fontWeight={900} fontSize={50} fill={INK}>{spec.title as string}</text>
         <path d={`M ${-W / 2 + 40} ${H / 2} L ${W / 2 - 40} ${H / 2}`} stroke={INK} strokeWidth={5} />
         {bars.map((b, i) => {
-          const x = (i - 1) * 340;
-          const g = b.static ? 1 : ease((t - 0.3 - (i > 0 ? (i - 1) * 1.6 + 0.4 : 0)) / 0.9);
+          const x = (i - (n - 1) / 2) * gap;
+          const g = b.static ? 1 : ease((t - 0.3 - i * step) / Math.min(0.9, step + 0.3));
           const h = (b.v / max) * (H - 40) * g;
           const c = b.hot ? RED : i === 0 ? TEAL : GOLD;
           return (
@@ -461,7 +466,7 @@ const Rise: React.FC<P> = ({spec, t}) => {
 const Checklist: React.FC<P> = ({spec, p}) => {
   const items = spec.items as string[];
   const n = items.length;
-  const w = spec.pos === 'right' ? 1000 : 1300;
+  const w = (spec.w as number) ?? (spec.pos === 'right' ? 1000 : 1300);
   return (
     <g>
       <Card w={w} h={n * 130 + 90}>
@@ -504,11 +509,51 @@ const Chips: React.FC<P> = ({spec, p, t}) => {
   );
 };
 
-const End: React.FC<P> = ({t}) => (
-  <g transform={`translate(0 -330) scale(${pop(clamp(t * 2))})`}>
-    <text x={0} y={0} textAnchor="middle" fontFamily={FONT} fontWeight={900} fontSize={92} fill={GOLD} stroke={INK} strokeWidth={10} paintOrder="stroke">What IF You...</text>
+const End: React.FC<P> = ({spec, t}) => (
+  <g>
+    <g transform={`translate(0 -330) scale(${pop(clamp(t * 2))})`}>
+      <text x={0} y={0} textAnchor="middle" fontFamily={FONT} fontWeight={900} fontSize={92} fill={GOLD} stroke={INK} strokeWidth={10} paintOrder="stroke">{(spec.title as string) ?? 'The If Lab'}</text>
+    </g>
+    {spec.next ? (
+      <g transform={`translate(0 -205) scale(${pop(clamp((t - 0.6) * 2.5))})`}>
+        <rect x={-560} y={-56} width={1120} height={104} rx={52} fill={CREAM} {...k} strokeWidth={5} />
+        <text x={0} y={14} textAnchor="middle" fontFamily={FONT} fontWeight={900} fontSize={Math.min(46, Math.floor(1040 / (((spec.next as string).length + 6) * 0.6)))} fill={INK}>
+          <tspan fill={RED}>NEXT: </tspan>{spec.next as string}
+        </text>
+      </g>
+    ) : null}
   </g>
 );
+
+/** A live counter that collapses: "9,500 payments a second" -> 0. */
+const Ticker: React.FC<P> = ({spec, t, p}) => {
+  const from = (spec.from as number) ?? 9500;
+  const to = (spec.to as number) ?? 0;
+  const at = (spec.at as number) ?? 2;
+  const dropped = p >= at;
+  const q = dropped ? clamp((p - at) * 6) : 0;
+  const live = from * (1 + 0.012 * Math.sin(t * 23) + 0.008 * Math.sin(t * 51));
+  const val = dropped ? from + (to - from) * (1 - Math.pow(1 - q, 3)) : live;
+  const shake = dropped && q < 1 ? Math.sin(t * 90) * 10 * (1 - q) : 0;
+  const lines = wrap(spec.label as string, 30);
+  return (
+    <g transform={`translate(${shake} 0) scale(${pop(clamp(t * 3.5))})`}>
+      <Card w={980} h={470} fill={dropped ? '#fdecea' : CREAM}>
+        <g transform="translate(-400 -170)">
+          <circle r={14} fill={dropped ? '#9aa3b0' : '#2fae6b'} opacity={dropped ? 1 : 0.5 + 0.5 * Math.sin(t * 8)} />
+          <text x={30} y={12} fontFamily={FONT} fontWeight={800} fontSize={34} fill={dropped ? '#b8322a' : '#1f7d4b'}>{dropped ? 'DOWN' : 'LIVE'}</text>
+        </g>
+        <text x={0} y={50} textAnchor="middle" fontFamily={FONT} fontWeight={900} fontSize={230} fill={dropped ? '#b8322a' : INK} letterSpacing={-8}>
+          {Math.round(val).toLocaleString('en-IN')}
+        </text>
+        {lines.map((l, i) => (
+          <text key={i} x={0} y={130 + i * 50} textAnchor="middle" fontFamily={FONT} fontWeight={800} fontSize={42} fill={INK}>{l}</text>
+        ))}
+        <Src text={spec.src as string} y={206} />
+      </Card>
+    </g>
+  );
+};
 
 export const OVERLAYS: Record<string, React.FC<P>> = {
   title: Title,
@@ -528,6 +573,7 @@ export const OVERLAYS: Record<string, React.FC<P>> = {
   checklist: Checklist,
   chips: Chips,
   end: End,
+  ticker: Ticker,
 };
 
 export const OverlayView: React.FC<P> = (props) => {
@@ -558,6 +604,47 @@ export const DayBadge: React.FC<{day: number; prev: number | null; t: number}> =
       <text x={302} y={72} textAnchor="end" fontFamily={FONT} fontWeight={700} fontSize={30} fill="#6d6a66">/ 30</text>
       <rect x={28} y={90} width={274} height={18} rx={9} fill="#e3ddd0" stroke={INK} strokeWidth={3} />
       {frac > 0 && <rect x={28} y={90} width={274 * frac} height={18} rx={9} fill={TEAL} stroke={INK} strokeWidth={3} />}
+    </g>
+  );
+};
+
+/** Clock in the top-left corner with the day's progress, 6 AM to midnight. Pops when the time changes. */
+export const parseClock = (c: string) => {
+  const m = /(\d+):(\d+)\s*(AM|PM)/i.exec(c);
+  if (!m) return 12;
+  let h = parseInt(m[1], 10) % 12;
+  if (m[3].toUpperCase() === 'PM') h += 12;
+  if (/12:00 AM/i.test(c)) h = 24;
+  return h + parseInt(m[2], 10) / 60;
+};
+
+export const TimeBadge: React.FC<{clock: string; prev: string | null; t: number}> = ({clock, prev, t}) => {
+  const changed = prev !== clock;
+  const q = changed ? clamp(t * 3) : 1;
+  const h = parseClock(clock);
+  const frac = clamp((h - 6) / 18);
+  const night = h >= 19 || h < 6;
+  return (
+    <g transform={`translate(70 60) scale(${changed ? pop(q) : 1})`}>
+      <rect x={6} y={8} width={430} height={128} rx={26} fill="#000" opacity={0.25} />
+      <rect x={0} y={0} width={430} height={128} rx={26} fill={CREAM} {...k} strokeWidth={5} />
+      <g transform="translate(58 52)">
+        {night ? (
+          <g>
+            <circle r={26} fill="#27336b" {...k} strokeWidth={3} />
+            <circle cx={-6} cy={-2} r={15} fill="#fff7d6" />
+            <circle cx={2} cy={-8} r={13} fill="#27336b" />
+          </g>
+        ) : (
+          <g>
+            {Array.from({length: 8}, (_, i) => <path key={i} d="M 0 -34 L 0 -26" transform={`rotate(${i * 45 + t * 20})`} stroke={GOLD} strokeWidth={6} strokeLinecap="round" />)}
+            <circle r={20} fill={GOLD} {...k} strokeWidth={3} />
+          </g>
+        )}
+      </g>
+      <text x={104} y={74} fontFamily={FONT} fontWeight={900} fontSize={62} fill={INK} letterSpacing={-1}>{clock}</text>
+      <rect x={28} y={92} width={374} height={18} rx={9} fill="#e3ddd0" stroke={INK} strokeWidth={3} />
+      {frac > 0 && <rect x={28} y={92} width={Math.max(18, 374 * frac)} height={18} rx={9} fill={RED} stroke={INK} strokeWidth={3} />}
     </g>
   );
 };

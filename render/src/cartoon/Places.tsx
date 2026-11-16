@@ -1,5 +1,6 @@
 import React from 'react';
 import {INK, darken} from './Character';
+import {MONEY_SETS} from './MoneySets';
 
 /**
  * Sets for the episode renderer, drawn in code on a 1920 x 1080 canvas. Flat colours and no blur
@@ -448,4 +449,5 @@ export const SETS: Record<string, React.FC<SetProps>> = {
   bathroom: Bathroom,
   shower: (props) => <Bathroom {...props} opt={{...props.opt, shower: true}} />,
   drawer: Drawer,
+  ...MONEY_SETS,
 };

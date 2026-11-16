@@ -259,7 +259,44 @@ const NoCamera: React.FC<P> = ({p}) => (
   </g>
 );
 
+const FailTag: React.FC<P> = ({spec, t}) => (
+  <g transform={`rotate(${(spec.tilt as number) ?? -6}) translate(0 ${Math.sin(t * 5) * 4})`}>
+    <rect x={-120} y={-40} width={240} height={80} rx={16} fill="#e9443a" {...k} strokeWidth={5} />
+    <text x={0} y={16} textAnchor="middle" fontFamily={FONT} fontWeight={900} fontSize={46} fill="#fff">{(spec.text as string) ?? 'FAILED'}</text>
+  </g>
+);
+
+const Spark: React.FC<P> = ({t}) => (
+  <g>
+    {Array.from({length: 9}, (_, i) => {
+      const a = (i / 9) * Math.PI * 2 + i;
+      const r = 30 + ((t * 260 + i * 37) % 120);
+      return <path key={i} d={`M ${Math.cos(a) * r} ${Math.sin(a) * r} l ${Math.cos(a) * 26} ${Math.sin(a) * 26}`} stroke={i % 2 ? '#ffe27a' : '#ff8a5a'} strokeWidth={8} strokeLinecap="round" opacity={1 - (r - 30) / 120} />;
+    })}
+    <path d="M -10 -44 L 14 -8 L -6 -4 L 12 44 L -22 2 L 0 -4 Z" fill="#ffe27a" {...k} transform={`scale(${1 + 0.2 * Math.sin(t * 30)})`} />
+  </g>
+);
+
+const Coins: React.FC<P> = ({t}) => (
+  <g>
+    {Array.from({length: 7}, (_, i) => {
+      const a = -Math.PI / 2 + (i - 3) * 0.32;
+      const d = Math.min(1, t * 1.4);
+      const x = Math.cos(a) * 260 * d;
+      const y = Math.sin(a) * 260 * d + 300 * d * d;
+      return (
+        <g key={i} transform={`translate(${x} ${y})`} opacity={1 - d * 0.3}>
+          <ellipse rx={26} ry={26 * Math.abs(Math.cos(t * 9 + i))} fill="#f2b84b" {...k} />
+        </g>
+      );
+    })}
+  </g>
+);
+
 export const FX: Record<string, React.FC<P>> = {
+  fail: FailTag,
+  spark: Spark,
+  coins: Coins,
   buzz: Buzz,
   ring: Ring,
   zzz: Zzz,

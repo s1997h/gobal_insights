@@ -2,6 +2,7 @@ import React from 'react';
 import {Character, INK, darken} from './Character';
 import {CAST} from './Cast';
 import {Icon} from './Icons';
+import {MONEY_PROPS} from './MoneyProps';
 
 /** Props for the episode renderer. Each is placed at x, y (its base) and scaled by s. */
 
@@ -357,6 +358,7 @@ export const PROPS: Record<string, React.FC<P>> = {
   shop_front: ShopFront,
   wall_clock: WallClock,
   coffee: Coffee,
+  ...MONEY_PROPS,
 };
 
 export const PropView: React.FC<P> = (props) => {
