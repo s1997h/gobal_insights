@@ -9,6 +9,7 @@ from __future__ import annotations
 import math
 import re
 import shutil
+import time
 import wave
 from pathlib import Path
 from typing import Any
@@ -83,9 +84,9 @@ class Narrator:
         self.ctx = ctx
         n = ctx.style.narrator
         self.voice, self.rate = n.voice, n.rate
-        self.fallback = n.fallback_voice
-        if n.temperature is not None and hasattr(ctx.tts, "voice_params"):
-            ctx.tts.voice_params = f"temperature={n.temperature:g}"
+        self.fallbacks = [v for v in n.fallbacks if v != n.voice]
+        if n.temperature is not None and hasattr(ctx.tts, "temperature"):
+            ctx.tts.temperature = n.temperature
         self.cache = ctx.cfg.root / "cache" / "tts"
         self.new_chars = 0
         self.spoke = False  # once a clip exists in one voice, the video never switches to another
@@ -98,17 +99,28 @@ class Narrator:
         est = ctx.ledger.tts_cost(len(text), self._price_key())
         if est > 0:
             ctx.ledger.check_cap(est)
-        try:
-            res = ctx.tts.synth(text, self.voice, self.rate, self.cache)
-        except Exception as e:  # noqa: BLE001 - any engine error on the first choice tries the fallback once
-            if self.spoke or not self.fallback or self.fallback == self.voice:
-                raise PipelineError(
-                    f"The voice {self.voice!r} failed: {e}. Check AZURE_SPEECH_REGION (HD voices exist only in "
-                    "some regions) or set narrator.fallback_voice in the channel's style file."
-                ) from e
-            ctx.log(f"voice: {self.voice} failed ({str(e)[:160]}); using {self.fallback} for this episode")
-            self.voice, self.fallback = self.fallback, None
-            res = ctx.tts.synth(text, self.voice, self.rate, self.cache)
+        tried: list[str] = []
+        while True:
+            try:
+                res = ctx.tts.synth(text, self.voice, self.rate, self.cache)
+                break
+            except Exception as e:  # noqa: BLE001 - any engine error on a voice tries the next one
+                if self.spoke:  # mid-video: never switch voices, and finished lines are cached for a resume
+                    raise PipelineError(
+                        f"The voice {self.voice} failed partway through: {str(e)[:300]}. "
+                        "Run `pipeline resume <run_id>` to retry; lines already voiced are not paid for again."
+                    ) from e
+                tried.append(f"{self.voice}: {str(e)[:160]}")
+                if not self.fallbacks:
+                    raise PipelineError(
+                        "No narrator voice worked. "
+                        + " | ".join(tried)
+                        + ". Check AZURE_SPEECH_KEY and AZURE_SPEECH_REGION, and that the voices in the style "
+                        "file exist in your Speech region (HD voices exist only in some regions)."
+                    ) from e
+                nxt = self.fallbacks.pop(0)
+                ctx.log(f"voice: {self.voice} failed ({str(e)[:160]}); trying {nxt}")
+                self.voice = nxt
         self.spoke = True
         if not res.cached:
             key = self._price_key()
@@ -140,6 +152,7 @@ def voice(
     speech_ms = 0.0
     for i, shot in enumerate(shots):
         res = narrator.say(shot["n"])
+        narrator.ctx.advance((i + 1) / len(shots))
         nxt = shots[i + 1]["id"] if i + 1 < len(shots) else None
         ms = max(res.duration_ms + _tail(shot, nxt in chapter_ids) * 1000, float(shot.get("min", 0)) * 1000)
         ms = math.ceil(ms / 1000 * FPS) / FPS * 1000  # whole frames, so picture and sound never drift
@@ -213,8 +226,69 @@ def bundle(ctx: RunContext, work: Path) -> Path:
     return out
 
 
+_RENDERED = re.compile(r"Rendered (\d+)/(\d+)")
+
+
+def _mmss(sec: float) -> str:
+    sec = max(0, round(sec))
+    return f"{sec // 60}m {sec % 60:02d}s" if sec >= 60 else f"{sec}s"
+
+
+class _RenderProgress:
+    """Turns Remotion's "Rendered 120/1966" lines into the run's percentage and a line every 10% or minute."""
+
+    def __init__(self, ctx: RunContext, name: str, total: int):
+        self.ctx, self.name, self.total = ctx, name, total
+        self.done = 0  # frames finished in earlier chunks (rendered now or on an earlier attempt)
+        self.base = 0  # first frame of the chunk being rendered
+        self.fresh = 0  # frames rendered in this process, for the time estimate
+        self.t0 = time.monotonic()
+        self.last_log = 0.0
+        self.last_step = -1
+
+    def skip(self, frames: int) -> None:
+        self.done += frames
+        self.ctx.advance(self.done / self.total)
+
+    def start_chunk(self, a: int, b: int) -> None:
+        self.base = self.done
+        if self.fresh == 0:
+            self.t0 = time.monotonic()
+        left = "" if self.done == 0 else f", {self.done} already done"
+        self.ctx.log(f"render[{self.name}]: {self.total} frames to draw{left}")
+
+    def line(self, text: str) -> None:
+        m = _RENDERED.search(text)
+        if not m:
+            return
+        n = int(m.group(1))
+        now_done = self.base + n
+        self.ctx.advance(now_done / self.total)
+        step = int(now_done / self.total * 10)
+        if step == 0 or (step <= self.last_step and time.monotonic() - self.last_log < 60):
+            return
+        self.last_step, self.last_log = step, time.monotonic()
+        fresh = self.fresh + n
+        rate = fresh / max(1e-6, time.monotonic() - self.t0)
+        eta = f", about {_mmss((self.total - now_done) / rate)} left" if fresh >= 30 else ""
+        self.ctx.log(
+            f"render[{self.name}]: {now_done / self.total:.0%} of frames ({now_done}/{self.total}){eta}"
+        )
+
+    def end_chunk(self, frames: int) -> None:
+        self.done = self.base + frames
+        self.fresh += frames
+        self.ctx.advance(self.done / self.total)
+
+
 def render_video(
-    ctx: RunContext, bundled: Path, comp: str, props: dict[str, Any], work: Path, name: str
+    ctx: RunContext,
+    bundled: Path,
+    comp: str,
+    props: dict[str, Any],
+    work: Path,
+    name: str,
+    label: str | None = None,
 ) -> Path:
     """Render `comp` with `props` to work/<name>.silent.mp4, in chunks, skipping chunks already done."""
     work.mkdir(parents=True, exist_ok=True)
@@ -233,21 +307,25 @@ def render_video(
     chunks.mkdir(parents=True, exist_ok=True)
     total = max(FPS, math.ceil(float(props["timing"]["total_sec"]) * FPS))
     files: list[Path] = []
+    follow = _RenderProgress(ctx, label or name, total)
     for i, a in enumerate(range(0, total, CHUNK_FRAMES)):
         b = min(total, a + CHUNK_FRAMES) - 1
         part = chunks / f"c{i:03d}.mp4"
         files.append(part)
         if part.exists():
+            follow.skip(b - a + 1)
             continue
         tmp = chunks / f"c{i:03d}.tmp.mp4"
-        ctx.log(f"render[{name}]: frames {a}-{b} of {total}")
+        follow.start_chunk(a, b)
         remotion(
             ctx,
             ["render", str(bundled), comp, str(tmp), f"--props={props_path}", f"--frames={a}-{b}", "--codec=h264",
              "--crf=18", "--pixel-format=yuv420p", "--color-space=bt709", "--muted"],
             work / f"{name}.render.log",
+            on_line=follow.line,
         )  # fmt: skip
         tmp.replace(part)
+        follow.end_chunk(b - a + 1)
     if len(files) == 1:
         shutil.copyfile(files[0], out)
     else:

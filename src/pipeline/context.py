@@ -33,6 +33,9 @@ class RunContext:
     tts: TTS
     image: ImageGen
     options: dict[str, Any] = field(default_factory=dict)
+    # overall progress shown on every log line, and the share of it the current step covers
+    pct: float | None = field(default=None, repr=False)
+    _span: tuple[float, float] = field(default=(0.0, 100.0), repr=False)
 
     @property
     def run_id(self) -> str:
@@ -56,9 +59,20 @@ class RunContext:
             return 1.0
         return 0.11 if fmt == "long" else 0.5
 
+    def stage(self, start: float, end: float) -> None:
+        """Enter a step that covers `start` to `end` percent of the whole run."""
+        self._span = (start, end)
+        self.pct = max(self.pct or 0.0, start)
+
+    def advance(self, frac: float) -> None:
+        """Move through the current step: 0 is its start, 1 its end. Progress never goes backwards."""
+        a, b = self._span
+        self.pct = max(self.pct or 0.0, a + (b - a) * min(1.0, max(0.0, frac)))
+
     def log(self, msg: str) -> None:
         stamp = datetime.now().strftime("%H:%M:%S")
-        print(f"[{stamp}] {msg}", file=sys.stderr, flush=True)
+        pct = f"{self.pct:3.0f}% " if self.pct is not None else ""
+        print(f"[{stamp}] {pct}{msg}", file=sys.stderr, flush=True)
 
     def set_status(self, status: str, error: str | None = None, **fields: Any) -> None:
         from .db import RunRow

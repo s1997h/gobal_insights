@@ -21,7 +21,8 @@ instagram-short/ video.mp4 meta.json  UPLOAD.md
 
 ## Setup (once)
 
-Needs Python 3.12+, Node 20+ and FFmpeg.
+Needs Python 3.12+, Node 20+ and FFmpeg (`ffmpeg` and `ffprobe` on PATH). On Windows:
+`winget install --id Gyan.FFmpeg -e`, then close and reopen the terminal and check with `ffmpeg -version`.
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
@@ -132,6 +133,9 @@ What happens, in order (`src/pipeline/episode/`):
    different angles, thumbnail words and object, description and tags (`prompts/episode_package.md`). Code checks
    that the first title and the first 150 characters of the description contain the search phrase, then adds
    chapters, sources and the disclosure line and renders the thumbnail.
+
+Every log line starts with how far the whole run has got (`[20:12:15]  41% render[long]: 40% of frames
+(786/1966), about 2m 10s left`); rendering prints a line every 10% of its frames, or every minute.
 
 Output lands in `out/<channel>/<run_id>/`: `youtube/` (video.mp4, thumbnail.png, description.txt, captions.srt,
 UPLOAD.md), `shorts/` (short1.mp4 ..., covers, POSTING.md with titles, captions, hashtags and suggested times) and

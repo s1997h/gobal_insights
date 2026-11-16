@@ -3,15 +3,19 @@ palette: {bg: "#FFFAF0", gold: "#F2B84B", teal: "#2EC4B6", ink: "#2A2A2E"}
 font: Inter
 captions: {max_words_per_line: 3, highlight: gold, position: lower_third}
 # The narrator. Listen to the candidates in Azure Speech Studio's voice gallery and put your pick here.
-# HD voices exist only in some regions (East US, West Europe, Southeast Asia and a few more); if your
-# Speech resource is elsewhere, the fallback voice is used for the whole video.
+# HD voices ("...:DragonHDLatestNeural") exist only in some Speech regions. If your Speech resource's region
+# does not have it, Azure answers "Unsupported voice" and the run tries each fallback in order, then keeps
+# the first one that works for the whole video (the log says which).
 narrator:
   provider: azure
-  voice: "en-IN-Aarti:DragonHDLatestNeural"
-  fallback_voice: "en-IN-NeerjaNeural"
+  voice: "en-IN-Aarti:DragonHDLatestNeural"     # Aarti, HD: the most human-sounding Indian English voice
+  fallback_voice:
+    - "en-IN-AartiNeural"                        # the same Aarti, standard model: works in every region
+    - "en-IN-NeerjaNeural"
   rate: 1.0
-  # HD voices only: how freely the voice acts the lines, 0.3 (steady) to 1.0 (most expressive). Leave it
-  # out to use the voice's own default. If the voice rejects it, the run carries on without it.
+  # HD voices only: how freely the voice acts the lines, 0.3 (steady) to 1.0 (most varied). Azure's default
+  # is 1.0 for DragonHD and 0.7 for Dragon HD Omni; 0.9 keeps the read lively but steadier over 8 minutes.
+  # Leave it out to use the voice's own default. If the voice rejects it, the run carries on without it.
   temperature: 0.9
   wpm: 150      # after the first real run, set this to the "words a minute" figure in REVIEW.md
 formats:

@@ -41,12 +41,16 @@ class TTS(Protocol):
 class _CachedTTS:
     name = "base"
 
+    def cache_extra(self, voice: str) -> str:
+        """Anything besides text, voice and rate that changes the audio; part of the cache key."""
+        return ""
+
     def _synth_to(self, text: str, voice: str, rate: float, out_wav: Path) -> list[WordTiming]:
         raise NotImplementedError
 
     def synth(self, text: str, voice: str, rate: float, cache_dir: Path) -> SynthResult:
         cache_dir.mkdir(parents=True, exist_ok=True)
-        extra = getattr(self, "voice_params", "") if "HD" in voice else ""
+        extra = self.cache_extra(voice)
         key = sha(self.name, voice, f"{rate:.3f}", text, *([extra] if extra else []))
         wav, meta = cache_dir / f"{key}.wav", cache_dir / f"{key}.json"
         if wav.exists() and meta.exists():
@@ -66,17 +70,27 @@ class AzureTTS(_CachedTTS):
 
     name = "azure"
 
-    # extra `parameters` for HD voices (e.g. "temperature=0.9"); set by the caller, part of the cache key
-    voice_params: str = ""
-
     def __init__(self, key: str | None = None, region: str | None = None):
         self.key = key or os.environ.get("AZURE_SPEECH_KEY")
         self.region = region or os.environ.get("AZURE_SPEECH_REGION")
+        # HD voices only: how freely the voice acts the lines (style file: narrator.temperature)
+        self.temperature: float | None = None
+        self._no_params: set[str] = set()  # voices that rejected the parameters once
         if not self.key or not self.region:
             raise RuntimeError(
                 "AZURE_SPEECH_KEY and AZURE_SPEECH_REGION are not set (put them in .env). "
                 "Use --offline to run without keys."
             )
+
+    def voice_params(self, voice: str) -> str:
+        """SSML `parameters` for HD voices. Dragon HD Omni also takes top_p, which works best equal to temperature."""
+        if self.temperature is None or "HD" not in voice or voice in self._no_params:
+            return ""
+        t = f"{self.temperature:g}"
+        return f"temperature={t};top_p={t}" if "Omni" in voice else f"temperature={t}"
+
+    def cache_extra(self, voice: str) -> str:
+        return self.voice_params(voice)
 
     def _synth_to(self, text: str, voice: str, rate: float, out_wav: Path) -> list[WordTiming]:
         import azure.cognitiveservices.speech as speechsdk
@@ -101,7 +115,7 @@ class AzureTTS(_CachedTTS):
         lang = voice.split("-")[0] + "-" + voice.split("-")[1] if voice.count("-") >= 2 else "en-US"
         # HD voices pace themselves and accept only part of SSML, so send no <prosody> at the normal rate
         body = escape(text) if pct == 0 else f'<prosody rate="{pct:+d}%">{escape(text)}</prosody>'
-        params = self.voice_params if "HD" in voice else ""
+        params = self.voice_params(voice)
 
         def speak(p: str, engine: Any = synth) -> Any:
             attr = f' parameters="{escape(p)}"' if p else ""
@@ -112,9 +126,9 @@ class AzureTTS(_CachedTTS):
 
         result = speak(params)
         if params and result.reason != speechsdk.ResultReason.SynthesizingAudioCompleted:
-            # this voice does not take the parameters: drop them for the rest of the run and say it plainly
+            # this voice does not take the parameters: drop them for this voice for the rest of the run
             words.clear()
-            type(self).voice_params = self.voice_params = ""
+            self._no_params.add(voice)
             result = speak("")
         if result.reason != speechsdk.ResultReason.SynthesizingAudioCompleted:
             details = result.cancellation_details

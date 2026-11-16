@@ -19,7 +19,7 @@ from typing import Any
 
 from sqlalchemy import select
 
-from ..adapters.audio import duration_sec
+from ..adapters.audio import duration_sec, missing_tool
 from ..adapters.llm import LLMOutputError
 from ..config import load_backlog, next_slot
 from ..context import PipelineError, RunContext
@@ -142,6 +142,7 @@ def write_script(ctx: RunContext, topic: dict[str, Any], target: int) -> tuple[E
         if draft is not None:
             ask["YOUR LAST DRAFT"] = draft.model_dump(exclude_defaults=True)
             ask["REWRITE IT TO FIX ALL OF THESE"] = fixes
+        ctx.advance((attempt - 1) / (MAX_REWRITES + 1))
         ctx.log(f"script: draft {attempt} ({target} words wanted)")
         draft = _generate(
             ctx, "strong", "script", system, json.dumps(ask, indent=1, ensure_ascii=False), EpisodeScript,
@@ -245,13 +246,18 @@ def plan_shorts(
 
 def make_shorts(
     ctx: RunContext, script: EpisodeScript, shots: list[Shot], long_voice: dict[str, Any],
-    narrator: produce.Narrator, bundled: Path, count: int,
+    narrator: produce.Narrator, bundled: Path, count: int, span: tuple[float, float] = (70.0, 94.0),
 ) -> list[dict[str, Any]]:  # fmt: skip
     count = min(count, max(1, (len(script.beats) - 1) // 3))
     wps = max(1.5, float(long_voice.get("wpm") or 156) / 60)
+    lo, hi = span
+    ctx.stage(lo, lo + 2)
     plan = plan_shorts(ctx, script, long_voice["scenes"], wps, count)
     made: list[dict[str, Any]] = []
+    each = (hi - lo - 2) / max(1, len(plan.shorts))
     for k, sp in enumerate(plan.shorts, 1):
+        start = lo + 2 + (k - 1) * each
+        ctx.stage(start, start + 0.2 * each)
         work = ctx.paths.run_dir / "shorts" / f"s{k}"
         final = ctx.paths.final_dir / f"short{k}.mp4"
         cover = ctx.paths.final_dir / f"short{k}-cover.jpg"
@@ -277,7 +283,8 @@ def make_shorts(
             "highlight": sp.highlight,
             "brand": ctx.channel.name,
         }
-        silent = produce.render_video(ctx, bundled, "EpisodeShort", props, work, "short")
+        ctx.stage(start + 0.2 * each, start + 0.95 * each)
+        silent = produce.render_video(ctx, bundled, "EpisodeShort", props, work, "short", label=f"short {k}")
         if not final.exists() or final.stat().st_mtime < silent.stat().st_mtime:
             produce.mux(silent, produce.mix(work / "audio", picked, timing, ctx.style.music.volume), final)
             produce.still(
@@ -528,25 +535,37 @@ def export(
 
 
 # ----------------------------------------------------------------------------------------------- run
+def preflight() -> None:
+    """Fail in the first second, before any paid step, when a program the run needs at the end is missing."""
+    missing = [t for t in ("ffmpeg", "ffprobe") if shutil.which(t) is None]
+    if missing:
+        raise PipelineError(missing_tool(" and ".join(missing)))
+
+
 def _run(ctx: RunContext) -> None:
     p = ctx.paths
     p.run_dir.mkdir(parents=True, exist_ok=True)
     p.final_dir.mkdir(parents=True, exist_ok=True)
+    ctx.stage(0, 2)
+    preflight()
     topic = pick_topic(ctx)
     title = topic["chosen"]["title"]
     ctx.set_status("running", topic=title, story_shape="episode")
     ctx.log(f"topic: {title}  [{topic['source']}]")
 
     target = ctx.style.target_words("long", ctx.scale)
+    ctx.stage(2, 16)
     script, gate = write_script(ctx, topic, target)
 
     shots, chapters = direct(script)
     write_json(p.run_dir / "shots.json", {"title": title, "shots": shots, "chapters": chapters})
 
+    ctx.stage(16, 23)
     narrator = produce.Narrator(ctx)
     audio = p.run_dir / "audio"
     long_voice = produce.load_voice(audio)
     if long_voice is None:
+        ctx.log(f"voice: reading {len(shots)} lines with {narrator.voice}")
         long_voice = produce.voice(narrator, shots, audio, {sid for sid, _ in chapters[1:]})
         write_json(audio / "voice.json", {"voice": narrator.voice, "wpm": long_voice["wpm"]})
         ctx.log(
@@ -558,18 +577,24 @@ def _run(ctx: RunContext) -> None:
         narrator.voice, long_voice["wpm"] = meta["voice"], meta["wpm"]
     timing = {"total_sec": long_voice["total_sec"], "scenes": long_voice["scenes"]}
 
+    ctx.stage(23, 25)
     bundled = produce.bundle(ctx, p.render_dir)
     final = p.final("long")
+    ctx.stage(25, 68)
     silent = produce.render_video(
         ctx, bundled, "Episode", {"shots": shots, "timing": timing}, p.render_dir, "long"
     )
+    ctx.stage(68, 70)
     if not final.exists() or final.stat().st_mtime < silent.stat().st_mtime:
+        ctx.log("sound: mixing voice, music and effects")
         produce.mux(silent, produce.mix(audio, shots, timing, ctx.style.music.volume), final)
+    ctx.advance(1)
     dur = duration_sec(final)
     ctx.log(f"render: long video {fmt_timestamp(dur)} -> {final}")
 
     shorts = make_shorts(ctx, script, shots, long_voice, narrator, bundled, int(ctx.options.get("shorts", 4)))
 
+    ctx.stage(94, 98)
     pk = write_package(ctx, title, script)
     if not p.thumbnail.exists():
         produce.still(
@@ -577,6 +602,7 @@ def _run(ctx: RunContext) -> None:
             p.thumbnail,
         )  # fmt: skip
 
+    ctx.stage(98, 100)
     out = export(ctx, title, script, gate, pk, chapters, long_voice, shorts, narrator)
     with session_scope(ctx.sf) as s:
         row = s.query(AssetRow).filter_by(run_id=ctx.run_id, format="long").one_or_none()
@@ -590,6 +616,7 @@ def _run(ctx: RunContext) -> None:
         else f"engagement gate still has {len(gate['open_fixes'])} open fix(es); see REVIEW.md"
     )
     ctx.set_status("ready_for_review", error=note)
+    ctx.advance(1)
     ctx.log(f"done: {out}  ({slugify(title)})")
 
 
