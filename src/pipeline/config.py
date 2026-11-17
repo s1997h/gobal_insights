@@ -31,6 +31,10 @@ class LLMTiers(BaseModel):
     # ({script: high, critic: medium, default: low}); more effort writes better stories and costs more tokens
     reasoning_effort: str | dict[str, str] | None = None
     max_tokens: dict[str, int] = {}  # per-provider overrides of the shared limits
+    # azure_openai: deployments to call through the Responses API instead of Chat Completions. Newer models
+    # (GPT-6.1 Sol) only call functions there. A deployment that rejects Chat Completions tool calls is
+    # switched automatically too; listing it saves the failed first call.
+    responses: list[str] = []
 
     def effort(self, step: str) -> str | None:
         e = self.reasoning_effort

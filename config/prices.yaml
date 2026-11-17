@@ -8,6 +8,7 @@ llm:
   # Azure OpenAI deployments, keyed by deployment name. VERIFY on the Azure OpenAI pricing page
   # (these are the published GPT-5 mini / nano rates, not checked against your region).
   gpt-5: {input_per_mtok: 1.25, output_per_mtok: 10.0}       # Global Standard
+  gpt-6.1-sol: {input_per_mtok: 2.0, output_per_mtok: 10.0}  # Global Standard, prompts under 272K tokens
   gpt-5-mini: {input_per_mtok: 0.25, output_per_mtok: 2.0}
   gpt-5-nano: {input_per_mtok: 0.05, output_per_mtok: 0.40}
 # VERIFY the Azure and OpenAI rates below on their pricing pages.

@@ -8,16 +8,17 @@ llm:
     strong: claude-sonnet-5-5     # script + critic
     small: claude-haiku-5-5       # topic + package
   azure_openai:
-    # Your Foundry *deployment names* (Foundry suggests the model name; keep it).
-    # gpt-5-mini does both jobs: the Azure for Students subscription has quota for it
-    # (500K tokens per minute) but none for gpt-5-nano. Its deployment needs at least 50K TPM.
-    # A stronger writer: deploy gpt-5 in Foundry and set strong: gpt-5 (about $1 a video instead of $0.20).
-    strong: gpt-5-mini
+    # Your Foundry *deployment names* (Foundry suggests the model name; keep it). Both must be in the Foundry
+    # resource that AZURE_OPENAI_ENDPOINT points at, each with at least 50K tokens per minute.
+    # GPT-6.1 Sol writes the stories (script, critic, Shorts; about $1 a video); gpt-5-mini does the small
+    # jobs (topic, titles). For the cheapest runs set strong: gpt-5-mini (about $0.20 a video).
+    strong: gpt-6.1-sol
     small: gpt-5-mini
-    # GPT-5-family models reason before answering; delete these lines for models that don't
-    # (gpt-4.1, DeepSeek-V3, Llama), or the request is rejected. The story is the hard part: at "low"
-    # gpt-5-mini writes a lecture and ignores the critic's fixes, so the script thinks hard and the rest
-    # stays cheap (a whole episode is still a few US cents on gpt-5-mini).
+    # GPT-6.1 Sol calls functions only through the Responses API.
+    responses: [gpt-6.1-sol]
+    # GPT-5 and GPT-6 models reason before answering (GPT-6.1 Sol takes low to max, no minimal). Delete this
+    # line for models that don't (gpt-4.1, DeepSeek-V3, Llama), or the request is rejected. The story is the
+    # hard part, so the script thinks hardest and the small jobs stay cheap.
     reasoning_effort: {script: high, critic: medium, shorts: medium, default: low}
     # Reasoning tokens count toward the limit, so allow more than Claude needs.
     max_tokens: {script: 64000, critic: 16000, topic: 6000, package: 6000, shorts: 16000}

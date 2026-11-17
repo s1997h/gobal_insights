@@ -6,6 +6,7 @@ Every call records a CostEvent. FakeLLM produces valid, deterministic output off
 
 from __future__ import annotations
 
+import functools
 import json
 import os
 import random
@@ -134,6 +135,18 @@ class _Usage:
         self.output_tokens = int(getattr(usage, "completion_tokens", 0) or 0)
 
 
+class _ResponsesUsage:
+    """Responses API usage: input_tokens / output_tokens (output includes reasoning)."""
+
+    def __init__(self, usage: Any):
+        self.input_tokens = int(getattr(usage, "input_tokens", 0) or 0)
+        self.output_tokens = int(getattr(usage, "output_tokens", 0) or 0)
+
+
+class _NeedsResponses(Exception):
+    """This deployment only calls functions through the Responses API."""
+
+
 def azure_v1_url(endpoint: str) -> str:
     """https://<resource>.openai.azure.com (or .services.ai.azure.com) -> .../openai/v1/"""
     e = endpoint.strip().rstrip("/")
@@ -158,6 +171,7 @@ class AzureOpenAILLM:
         self.models = models
         self.tiers = models.tiers("azure_openai")
         self.ledger = ledger
+        self._responses: set[str] = set()
         if client is None:
             from openai import OpenAI
 
@@ -172,8 +186,6 @@ class AzureOpenAILLM:
         self.client = client
 
     def _create(self, step: str, model: str, msgs: list[dict[str, Any]], tool: dict[str, Any]) -> Any:
-        import openai
-
         kwargs: dict[str, Any] = {
             "model": model,
             "messages": msgs,
@@ -184,32 +196,105 @@ class AzureOpenAILLM:
         effort = self.tiers.effort(step)
         if effort:
             kwargs["reasoning_effort"] = effort
+        return self._call(step, model, lambda: self.client.chat.completions.create(**kwargs), chat=True)
+
+    def _call(self, step: str, model: str, send: Callable[[], Any], chat: bool = False) -> Any:
+        import openai
+
         try:
-            return self.client.chat.completions.create(**kwargs)
+            return send()
         except openai.RateLimitError as e:
             raise LLMOutputError(
                 f"{step}: Azure rate limit on deployment {model!r}. Its tokens-per-minute quota is too low for "
-                f"this step (it needs about {kwargs['max_completion_tokens'] + 8000:,} tokens in one minute). "
-                "Raise the deployment's TPM in Foundry > Deployments, or set llm.provider: anthropic in "
+                f"this step (it needs about {self.models.budget(step, 'azure_openai') + 8000:,} tokens in one "
+                "minute). Raise the deployment's TPM in Foundry > Deployments, or set llm.provider: anthropic in "
                 "config/models.yaml."
             ) from e
         except openai.NotFoundError as e:
             raise LLMOutputError(
                 f"{step}: deployment {model!r} was not found at AZURE_OPENAI_ENDPOINT. Check the deployment "
-                "names under llm.azure_openai in config/models.yaml."
+                "names under llm.azure_openai in config/models.yaml, and that the deployment is in the same "
+                "Foundry resource as the endpoint."
             ) from e
         except openai.AuthenticationError as e:
             raise LLMOutputError(
                 f"{step}: Azure rejected the key. Check AZURE_OPENAI_API_KEY and AZURE_OPENAI_ENDPOINT."
             ) from e
         except openai.BadRequestError as e:
+            text = str(e).lower()
+            if chat and (
+                "responses api" in text or "/responses" in text or "tool calling is not supported" in text
+            ):
+                raise _NeedsResponses(str(e)) from e
             hint = (
-                " If the error mentions reasoning_effort, delete that line under llm.azure_openai in "
-                "config/models.yaml (this model does not reason)."
-                if "reasoning" in str(e)
+                " If the error mentions reasoning_effort, check the values under llm.azure_openai.reasoning_effort "
+                "in config/models.yaml (some models have no 'minimal'; models that don't reason take none)."
+                if "reasoning" in text
                 else ""
             )
             raise LLMOutputError(f"{step}: Azure rejected the request: {e}.{hint}") from e
+
+    def _generate_responses(
+        self, step: str, model: str, system: str, prompt: str, schema: type[T], check: Check | None
+    ) -> T:
+        """The same forced `submit` call through the Responses API (GPT-6.1 Sol and later)."""
+        kwargs: dict[str, Any] = {
+            "model": model,
+            "instructions": system,
+            "input": [{"role": "user", "content": prompt}],
+            "tools": [
+                {
+                    "type": "function",
+                    "name": "submit",
+                    "description": "Return the result",
+                    "parameters": schema.model_json_schema(),
+                    "strict": False,
+                }
+            ],
+            "tool_choice": {"type": "function", "name": "submit"},
+            "max_output_tokens": self.models.budget(step, "azure_openai"),
+        }
+        effort = self.tiers.effort(step)
+        if effort:
+            kwargs["reasoning"] = {"effort": effort}
+        last_error = ""
+        for _attempt in range(3):  # first try plus at most two fixes
+            self.ledger.check_cap(self.ledger.estimate(step))
+            r = self._call(step, model, functools.partial(self.client.responses.create, **kwargs))
+            self.ledger.record_llm(step, model, _ResponsesUsage(r.usage))
+            if getattr(r, "status", "completed") == "incomplete":
+                why = getattr(getattr(r, "incomplete_details", None), "reason", "") or "incomplete"
+                raise LLMOutputError(
+                    f"{step}: the answer stopped early ({why}). Raise llm.azure_openai.max_tokens.{step} in "
+                    "config/models.yaml, or lower reasoning_effort."
+                )
+            calls = [o for o in (r.output or []) if getattr(o, "type", "") == "function_call"]
+            if not calls:
+                raise LLMOutputError(f"{step}: the model returned no function call")
+            call = calls[0]
+            try:
+                obj = schema.model_validate(json.loads(call.arguments))
+                problems = check(obj) if check else []
+                if not problems:
+                    return obj
+                last_error = "\n".join(f"- {p}" for p in problems)
+            except json.JSONDecodeError as e:
+                last_error = f"the arguments were not valid JSON ({e})"
+            except ValidationError as e:
+                last_error = str(e)
+            # carry on from the stored response, so its reasoning stays with its function call
+            kwargs = {
+                **kwargs,
+                "previous_response_id": r.id,
+                "input": [
+                    {
+                        "type": "function_call_output",
+                        "call_id": call.call_id,
+                        "output": f"Invalid result:\n{last_error}\nFix every item and call submit again with the full result.",
+                    }
+                ],
+            }
+        raise LLMOutputError(f"{step}: {schema.__name__} still invalid after 3 tries:\n{last_error}")
 
     def generate(
         self,
@@ -223,6 +308,8 @@ class AzureOpenAILLM:
         hints: dict[str, Any] | None = None,
     ) -> T:
         model = self.tiers.strong if tier == "strong" else self.tiers.small
+        if model in self.tiers.responses or model in self._responses:
+            return self._generate_responses(step, model, system, prompt, schema, check)
         tool = {
             "type": "function",
             "function": {
@@ -238,7 +325,11 @@ class AzureOpenAILLM:
         last_error = ""
         for _attempt in range(3):  # first try plus at most two fixes
             self.ledger.check_cap(self.ledger.estimate(step))
-            r = self._create(step, model, msgs, tool)
+            try:
+                r = self._create(step, model, msgs, tool)
+            except _NeedsResponses:
+                self._responses.add(model)  # remembered for the rest of the run
+                return self._generate_responses(step, model, system, prompt, schema, check)
             self.ledger.record_llm(step, model, _Usage(r.usage))
             choice = r.choices[0]
             if choice.finish_reason == "length":
