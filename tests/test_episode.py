@@ -241,7 +241,9 @@ class EpisodeRemotionStub:
     def __init__(self) -> None:
         self.calls: list[list[str]] = []
 
-    def __call__(self, ctx: RunContext, args: list[str], log_path: Path, *, render: bool = True) -> None:
+    def __call__(
+        self, ctx: RunContext, args: list[str], log_path: Path, *, render: bool = True, on_line: Any = None
+    ) -> None:
         self.calls.append(args)
         if args[0] == "bundle":
             out = Path(next(a for a in args if a.startswith("--out-dir=")).split("=", 1)[1])
@@ -254,6 +256,10 @@ class EpisodeRemotionStub:
             Image.new("RGB", (320, 180), (255, 178, 56)).save(out)
             return
         a, b = (int(x) for x in next(x for x in args if x.startswith("--frames=")).split("=")[1].split("-"))
+        if on_line:  # what the Remotion CLI prints when it is not on a terminal
+            n = b - a + 1
+            for k in (0, n // 3, 2 * n // 3, n):
+                on_line(f"Rendered {k}/{n}, time remaining: 10s\n")
         subprocess.run(
             ["ffmpeg", "-y", "-loglevel", "error", "-f", "lavfi", "-i", f"color=c=black:s=320x180:r=30:d={(b - a + 1) / 30:.4f}",
              "-pix_fmt", "yuv420p", str(out)],
@@ -263,7 +269,11 @@ class EpisodeRemotionStub:
 
 @needs_ffmpeg
 def test_offline_episode_end_to_end(
-    make_ctx: MakeCtx, project: Path, sf: Any, monkeypatch: pytest.MonkeyPatch
+    make_ctx: MakeCtx,
+    project: Path,
+    sf: Any,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     stub = EpisodeRemotionStub()
     monkeypatch.setattr("pipeline.episode.produce.remotion", stub)
@@ -271,6 +281,14 @@ def test_offline_episode_end_to_end(
     monkeypatch.setattr("pipeline.episode.produce._BUNDLED", set())
     ctx = make_ctx("20260101-000000-iflab", "iflab", mode="episode", shorts=2)
     run_episode(ctx)
+
+    # every line says how far along the run is, the numbers only go up, and it ends at 100%
+    import re
+
+    pcts = [
+        int(m.group(1)) for m in re.finditer(r"^\[\d\d:\d\d:\d\d\]\s+(\d+)% ", capsys.readouterr().err, re.M)
+    ]
+    assert len(pcts) > 10 and pcts == sorted(pcts) and pcts[-1] == 100
 
     with session_scope(sf) as s:
         row = s.get(RunRow, ctx.run_id)
@@ -315,11 +333,11 @@ def test_a_failed_render_is_recorded_and_resumes(
     stub = EpisodeRemotionStub()
     boom = {"left": 1}
 
-    def flaky(ctx: RunContext, args: list[str], log_path: Path, *, render: bool = True) -> None:
+    def flaky(ctx: RunContext, args: list[str], log_path: Path, *, render: bool = True, **kw: Any) -> None:
         if args[0] == "render" and boom["left"]:
             boom["left"] -= 1
             raise PipelineError("simulated renderer crash")
-        stub(ctx, args, log_path, render=render)
+        stub(ctx, args, log_path, render=render, **kw)
 
     monkeypatch.setattr("pipeline.episode.produce.remotion", flaky)
     monkeypatch.setattr("pipeline.episode.produce._BUNDLED", set())
@@ -477,3 +495,75 @@ def test_end_card_drops_a_repeated_next() -> None:
     s.beats[-1].label = "Next: How IKEA makes money"
     shots, _ = direct(s)
     assert shots[-1]["ov"]["next"] == "How IKEA makes money"
+
+
+# ------------------------------------------------------------------- tools, voices and progress
+def test_a_missing_ffmpeg_stops_the_run_before_anything_is_paid_for(
+    make_ctx: MakeCtx, sf: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    real = __import__("shutil").which
+    monkeypatch.setattr("pipeline.episode.run.shutil.which", lambda t: None if t == "ffmpeg" else real(t))
+    ctx = make_ctx("20260101-000002-iflab", "iflab", mode="episode")
+    with pytest.raises(PipelineError, match="winget install"):
+        run_episode(ctx)
+    assert not ctx.paths.script("long").exists()
+    with session_scope(sf) as s:
+        row = s.get(RunRow, ctx.run_id)
+        assert row is not None and row.status == "failed" and "ffmpeg was not found" in (row.error or "")
+
+
+def test_ffmpeg_helper_names_the_missing_program() -> None:
+    from pipeline.adapters.audio import FFmpegError, run
+
+    with pytest.raises(FFmpegError, match="no-such-ffmpeg was not found"):
+        run(["no-such-ffmpeg", "-version"])
+
+
+def test_the_narrator_walks_the_fallback_list(make_ctx: MakeCtx, tmp_path: Path) -> None:
+    ctx = make_ctx("20260101-000003-iflab", "iflab", mode="episode")
+    real = ctx.tts
+    asked: list[str] = []
+
+    class Picky:
+        name = "fake"
+
+        def synth(self, text: str, voice: str, rate: float, cache_dir: Path) -> SynthResult:
+            asked.append(voice)
+            if voice != "en-IN-NeerjaNeural":
+                raise RuntimeError(f"Unsupported voice {voice}")
+            return real.synth(text, voice, rate, cache_dir)
+
+    ctx.tts = Picky()  # type: ignore[assignment]
+    ctx.style.narrator.voice = "en-IN-Aarti:DragonHDOmniLatestNeural"
+    ctx.style.narrator.fallback_voice = ["en-IN-AartiNeural", "en-IN-NeerjaNeural"]
+    n = produce.Narrator(ctx)
+    n.say("Kodak built it first.")
+    assert asked == ["en-IN-Aarti:DragonHDOmniLatestNeural", "en-IN-AartiNeural", "en-IN-NeerjaNeural"]
+    assert n.voice == "en-IN-NeerjaNeural"
+    n.say("Then it waited.")  # the chosen voice sticks for the rest of the video
+    assert asked[-1] == "en-IN-NeerjaNeural" and len(asked) == 4
+
+
+def test_expressiveness_goes_only_to_voices_that_take_it() -> None:
+    from pipeline.adapters.tts import AzureTTS
+
+    tts = AzureTTS(key="k", region="eastus")
+    assert tts.voice_params("en-us-Andrew:DragonHDLatestNeural") == ""  # nothing set in the style file
+    tts.temperature = 0.9
+    assert tts.voice_params("en-us-Andrew:DragonHDLatestNeural") == "temperature=0.9"
+    assert tts.voice_params("en-IN-Aarti:DragonHDOmniLatestNeural") == "temperature=0.9;top_p=0.9"
+    assert tts.voice_params("en-IN-NeerjaNeural") == ""
+    assert tts.cache_extra("en-IN-NeerjaNeural") == "" and tts.cache_extra("x:DragonHDLatestNeural")
+
+
+def test_progress_never_goes_backwards(make_ctx: MakeCtx, capsys: pytest.CaptureFixture[str]) -> None:
+    ctx = make_ctx("20260101-000004-iflab", "iflab", mode="episode")
+    ctx.log("before")
+    ctx.stage(25, 68)
+    ctx.advance(0.5)
+    ctx.log("half")
+    ctx.advance(0.2)  # a resumed step reporting less must not move the number back
+    ctx.stage(10, 20)
+    ctx.log("later")
+    err = capsys.readouterr().err
+    assert "] before" in err and "]  46% half" in err and "]  46% later" in err

@@ -196,10 +196,11 @@ bash infra/azure/download.sh <run_id>                               # then read 
 
 Before the first real run:
 
-1. **Voice.** `config/styles/iflab.yaml` names an Azure HD voice. HD voices exist only in some Speech regions
-   (East US, West Europe and Southeast Asia among them). If your Speech resource is in another region the run
-   logs that and uses `fallback_voice` for the whole video. To get the HD voice, create a second Speech resource
-   in a supported region and put its key and region in `.env`, then run `bash infra/azure/deploy.sh`.
+1. **Voice.** `config/styles/iflab.yaml` names an Azure HD voice (`en-IN-Aarti:DragonHDLatestNeural`). HD voices
+   exist only in some Speech regions. If yours lacks it, Azure answers "Unsupported voice" and the run tries the
+   `fallback_voice` list in order (standard Aarti, then Neerja), keeping the first that works for the whole video.
+   To get the HD voice, put the key and region of a Speech resource in a region that has it in `.env` (check by
+   playing the voice in Speech Studio with that resource selected), then run `bash infra/azure/deploy.sh`.
 2. **Pick the voice by ear** in Speech Studio's voice gallery (the code cannot hear), and put its name in the
    style file.
 3. **Pace.** After the first real run, `REVIEW.md` shows the measured words a minute. Put that number in

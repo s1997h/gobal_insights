@@ -11,8 +11,21 @@ class FFmpegError(RuntimeError):
     pass
 
 
+def missing_tool(tool: str) -> str:
+    return (
+        f"{tool} was not found. Install FFmpeg and put it on PATH: on Windows run "
+        "`winget install --id Gyan.FFmpeg -e`, then close and reopen the terminal (check with `ffmpeg -version`); "
+        "on Mac `brew install ffmpeg`; on Ubuntu `sudo apt install ffmpeg`. `pipeline doctor` checks it."
+    )
+
+
 def run(cmd: list[str]) -> str:
-    p = subprocess.run(cmd, capture_output=True, text=True)
+    try:
+        p = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    except (
+        FileNotFoundError
+    ) as e:  # Windows says only "[WinError 2] The system cannot find the file specified"
+        raise FFmpegError(missing_tool(cmd[0])) from e
     if p.returncode != 0:
         raise FFmpegError(f"{' '.join(cmd[:3])} ... failed:\n{p.stderr[-1500:]}")
     return p.stdout

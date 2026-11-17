@@ -109,10 +109,16 @@ class CaptionStyle(BaseModel):
 class Narrator(BaseModel):
     provider: str = "azure"
     voice: str
-    fallback_voice: str | None = None  # used for the whole video when `voice` fails (e.g. not in this region)
+    # tried in order, for the whole video, when `voice` fails (e.g. it does not exist in this Speech region)
+    fallback_voice: str | list[str] | None = None
     rate: float = 1.0
     temperature: float | None = Field(default=None, ge=0.3, le=1.0)  # HD voices: how freely the voice acts
     wpm: int = 150  # measured narration pace; used to size scripts
+
+    @property
+    def fallbacks(self) -> list[str]:
+        f = self.fallback_voice
+        return [f] if isinstance(f, str) else list(f or [])
 
 
 class LongSpec(BaseModel):

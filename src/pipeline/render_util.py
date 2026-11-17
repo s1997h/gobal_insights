@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+from collections.abc import Callable
 from pathlib import Path
 
 from .context import PipelineError, RunContext
@@ -45,7 +46,14 @@ def style_props(ctx: RunContext) -> dict[str, object]:
     }
 
 
-def remotion(ctx: RunContext, args: list[str], log_path: Path, *, render: bool = True) -> None:
+def remotion(
+    ctx: RunContext,
+    args: list[str],
+    log_path: Path,
+    *,
+    render: bool = True,
+    on_line: Callable[[str], None] | None = None,
+) -> None:
     npx = shutil.which("npx")
     if not npx:
         raise PipelineError(
@@ -62,8 +70,28 @@ def remotion(ctx: RunContext, args: list[str], log_path: Path, *, render: bool =
     if conc and render:
         cmd.append(f"--concurrency={conc}")
     log_path.parent.mkdir(parents=True, exist_ok=True)
-    with log_path.open("w", encoding="utf-8") as log:
-        proc = subprocess.run(cmd, cwd=render_dir, stdout=log, stderr=subprocess.STDOUT)
-    if proc.returncode != 0:
+    try:
+        with log_path.open("w", encoding="utf-8") as log:
+            if on_line is None:
+                code = subprocess.run(cmd, cwd=render_dir, stdout=log, stderr=subprocess.STDOUT).returncode
+            else:  # line by line, so the caller can report "Rendered 120/1966" as it happens
+                proc = subprocess.Popen(
+                    cmd, cwd=render_dir, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                    text=True, encoding="utf-8", errors="replace", bufsize=1,
+                )  # fmt: skip
+                assert proc.stdout is not None
+                for line in proc.stdout:
+                    log.write(line)
+                    try:
+                        on_line(line)
+                    except Exception:  # noqa: BLE001 - progress reporting must never stop a render
+                        pass
+                code = proc.wait()
+    except FileNotFoundError as e:
+        raise PipelineError(
+            f"Could not start {cmd[0]!r} ({e}). Install Node.js 20+ and run `npm ci` in the render folder; "
+            "`pipeline doctor` checks it."
+        ) from e
+    if code != 0:
         tail = log_path.read_text(encoding="utf-8", errors="replace")[-1800:]
-        raise PipelineError(f"Remotion failed (exit {proc.returncode}). Log: {log_path}\n{tail}")
+        raise PipelineError(f"Remotion failed (exit {code}). Log: {log_path}\n{tail}")
