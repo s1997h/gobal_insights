@@ -7,6 +7,7 @@ llm:
   claude-haiku-5-5:  {input_per_mtok: 0.10, output_per_mtok: 0.50}
   # Azure OpenAI deployments, keyed by deployment name. VERIFY on the Azure OpenAI pricing page
   # (these are the published GPT-5 mini / nano rates, not checked against your region).
+  gpt-5: {input_per_mtok: 1.25, output_per_mtok: 10.0}       # Global Standard
   gpt-5-mini: {input_per_mtok: 0.25, output_per_mtok: 2.0}
   gpt-5-nano: {input_per_mtok: 0.05, output_per_mtok: 0.40}
 # VERIFY the Azure and OpenAI rates below on their pricing pages.
@@ -15,7 +16,8 @@ tts:
   # HD voices (names containing "HD", e.g. en-IN-Aarti:DragonHDLatestNeural) are billed at a higher rate and
   # are not covered by the free monthly characters. Set high on purpose; VERIFY on the Azure Speech pricing page.
   azure_hd: {usd_per_million_chars: 30.0}
-  # ElevenLabs Starter: $6 a month for 30,000 characters, so about $200 per million. VERIFY your plan.
+  # ElevenLabs is a monthly plan; this spreads it per character. Starter: $6 for 30,000 characters (~$200 per
+  # million); Creator: $22 for 121,000 (~$182). VERIFY your plan.
   elevenlabs: {usd_per_million_chars: 200.0}
   # gpt-4o-mini-tts is billed by tokens; about $0.015 a minute, roughly $15 per million characters. VERIFY.
   openai: {usd_per_million_chars: 15.0}

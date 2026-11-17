@@ -11,6 +11,7 @@ llm:
     # Your Foundry *deployment names* (Foundry suggests the model name; keep it).
     # gpt-5-mini does both jobs: the Azure for Students subscription has quota for it
     # (500K tokens per minute) but none for gpt-5-nano. Its deployment needs at least 50K TPM.
+    # A stronger writer: deploy gpt-5 in Foundry and set strong: gpt-5 (about $1 a video instead of $0.20).
     strong: gpt-5-mini
     small: gpt-5-mini
     # GPT-5-family models reason before answering; delete these lines for models that don't
