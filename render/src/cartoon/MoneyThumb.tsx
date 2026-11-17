@@ -22,6 +22,7 @@ const OBJECTS: Record<string, [Omit<PropSpec, 'x' | 'y'>, number, number, number
   balance_locked: [{t: 'balance', at: 0, amount: '42,318'}, 0.85, -80, -70],
   cheque: [{t: 'cheque', val: '5,000'}, 1.7, -70, -40],
   calendar: [{t: 'calendar', flip: [1, 2]}, 1.05, -50, -10],
+  proto_cam: [{t: 'proto_cam'}, 1.05, -40, 100],
 };
 const FACES: Record<string, [Pose, Expression]> = {shocked: ['scared', 'shocked'], joy: ['cheer', 'joy'], worried: ['think', 'worried']};
 

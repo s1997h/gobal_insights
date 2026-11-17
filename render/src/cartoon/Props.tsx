@@ -4,6 +4,7 @@ import {CAST} from './Cast';
 import {Icon} from './Icons';
 import {BIZ_PROPS} from './BizSets';
 import {MONEY_PROPS} from './MoneyProps';
+import {STORY_PROPS} from './StoryProps';
 
 /** Props for the episode renderer. Each is placed at x, y (its base) and scaled by s. */
 
@@ -361,6 +362,7 @@ export const PROPS: Record<string, React.FC<P>> = {
   coffee: Coffee,
   ...MONEY_PROPS,
   ...BIZ_PROPS,
+  ...STORY_PROPS,
 };
 
 export const PropView: React.FC<P> = (props) => {

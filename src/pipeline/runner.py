@@ -48,7 +48,7 @@ def build_context(
         sf=sf,
         ledger=ledger,
         llm=build_llm(cfg.models.llm.provider, cfg.models.llm, ledger, offline),
-        tts=build_tts(cfg.models.tts.provider, offline),
+        tts=build_tts(style.narrator.provider or cfg.models.tts.provider, offline),
         image=build_image(cfg.models.image, offline, stills_needed),
         options=options,
     )

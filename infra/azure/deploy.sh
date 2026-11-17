@@ -94,6 +94,7 @@ ANTHROPIC_KEY="$(get_env ANTHROPIC_API_KEY)"
 AOAI_ENDPOINT="$(get_env AZURE_OPENAI_ENDPOINT)"
 AOAI_KEY="$(get_env AZURE_OPENAI_API_KEY)"
 OPENAI_KEY="$(get_env OPENAI_API_KEY)"
+ELEVEN_KEY="$(get_env ELEVENLABS_API_KEY)"
 if [ -z "$ANTHROPIC_KEY" ] && { [ -z "$AOAI_ENDPOINT" ] || [ -z "$AOAI_KEY" ]; }; then
   echo "WARNING: $ENV_FILE has no script-model key (ANTHROPIC_API_KEY, or AZURE_OPENAI_ENDPOINT + AZURE_OPENAI_API_KEY)."
   echo "         Only --offline runs will work until you add one and run this script again."
@@ -105,7 +106,7 @@ trap 'rm -f "$SPEC"' EXIT
 chmod 600 "$SPEC"
 LOCATION="$LOCATION" ENV_ID="$ENV_ID" IMAGE="$IMAGE" ACR_SERVER="$ACR.azurecr.io" ACR_USER="$ACR_USER" \
 ACR_PASS="$ACR_PASS" SHARE="$SHARE" CHANNEL="$CHANNEL" SPEECH_KEY="$SPEECH_KEY" SPEECH_REGION="$SPEECH_REGION" \
-ANTHROPIC_KEY="$ANTHROPIC_KEY" AOAI_ENDPOINT="$AOAI_ENDPOINT" AOAI_KEY="$AOAI_KEY" OPENAI_KEY="$OPENAI_KEY" \
+ANTHROPIC_KEY="$ANTHROPIC_KEY" AOAI_ENDPOINT="$AOAI_ENDPOINT" AOAI_KEY="$AOAI_KEY" OPENAI_KEY="$OPENAI_KEY" ELEVEN_KEY="$ELEVEN_KEY" \
 python3 - "$SPEC" <<'PY'
 import json, os, sys
 
@@ -121,6 +122,7 @@ for var, secret, value in [
     ("ANTHROPIC_API_KEY", "anthropic-api-key", e["ANTHROPIC_KEY"]),
     ("AZURE_OPENAI_API_KEY", "azure-openai-api-key", e["AOAI_KEY"]),
     ("OPENAI_API_KEY", "openai-api-key", e["OPENAI_KEY"]),
+    ("ELEVENLABS_API_KEY", "elevenlabs-api-key", e.get("ELEVEN_KEY", "")),
 ]:
     if value:
         secrets.append({"name": secret, "value": value})

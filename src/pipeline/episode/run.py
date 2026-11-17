@@ -31,7 +31,7 @@ from . import produce
 from .audit import audit, hook_score
 from .caps import caption_tokens, srt
 from .director import direct, direct_hook
-from .schemas import VIEW_GUIDE, EpisodeCritique, EpisodePackage, EpisodeScript, ShortsPlan
+from .schemas import PAINTED_GUIDE, VIEW_GUIDE, EpisodeCritique, EpisodePackage, EpisodeScript, ShortsPlan
 
 MAX_REWRITES = 3
 SHORT_MAX_SEC = 58.0
@@ -106,6 +106,7 @@ def write_script(ctx: RunContext, topic: dict[str, Any], target: int) -> tuple[E
     if p.script("long").exists() and gate_path.exists():
         return EpisodeScript.model_validate(read_json(p.script("long"))), dict(read_json(gate_path))
     title = topic["chosen"]["title"]
+    painted = ctx.style.look == "painted"
     shapes = "\n".join(f"- {s.name}: {s.description}" for s in ctx.style.story_shapes)
     common = {
         "channel_name": ctx.channel.name,
@@ -123,11 +124,14 @@ def write_script(ctx: RunContext, topic: dict[str, Any], target: int) -> tuple[E
         hi=round(target * 1.1),
         beats=max(8, round(target / 17)),
         chapters="one or two" if target < 400 else "six to nine",
+        look_guide=render_prompt(ctx.cfg.root, "episode_painted", painted_guide=PAINTED_GUIDE)
+        if painted
+        else "",
     )
     critic_system = render_prompt(ctx.cfg.root, "episode_critic", **common)
 
     def check(s: EpisodeScript) -> list[str]:
-        return (s.problems(target) + _banned(s, ctx.style.banned_phrases))[:12]
+        return (s.problems(target, painted) + _banned(s, ctx.style.banned_phrases))[:12]
 
     fixes: list[str] = []
     draft: EpisodeScript | None = None
@@ -261,7 +265,7 @@ def make_shorts(
         work = ctx.paths.run_dir / "shorts" / f"s{k}"
         final = ctx.paths.final_dir / f"short{k}.mp4"
         cover = ctx.paths.final_dir / f"short{k}-cover.jpg"
-        picked = [direct_hook(sp.hook, f"h{k}")]
+        picked = [direct_hook(sp.hook, f"h{k}", ctx.style.look)]
         for s in shots[sp.first_beat - 1 : sp.last_beat]:
             c = copy.deepcopy(s)
             c["tr"] = "punch"
@@ -274,6 +278,7 @@ def make_shorts(
             ctx.log(f"short {k}: {v['total_sec']:.0f}s is too long for a Short; skipped")
             continue
         timing = {"total_sec": v["total_sec"], "scenes": v["scenes"]}
+        produce.mouths(picked, timing, v["words"])
         props = {
             "shots": picked,
             "timing": timing,
@@ -557,7 +562,7 @@ def _run(ctx: RunContext) -> None:
     ctx.stage(2, 16)
     script, gate = write_script(ctx, topic, target)
 
-    shots, chapters = direct(script)
+    shots, chapters = direct(script, look=ctx.style.look)
     write_json(p.run_dir / "shots.json", {"title": title, "shots": shots, "chapters": chapters})
 
     ctx.stage(16, 23)
@@ -581,9 +586,11 @@ def _run(ctx: RunContext) -> None:
     bundled = produce.bundle(ctx, p.render_dir)
     final = p.final("long")
     ctx.stage(25, 68)
-    silent = produce.render_video(
-        ctx, bundled, "Episode", {"shots": shots, "timing": timing}, p.render_dir, "long"
-    )
+    props: dict[str, Any] = {"shots": shots, "timing": timing}
+    if ctx.style.look == "painted":  # talking mouths and burnt-in captions
+        props["shots"] = produce.mouths(shots, timing, long_voice["words"])
+        props["words"] = produce.captions(long_voice["words"])
+    silent = produce.render_video(ctx, bundled, "Episode", props, p.render_dir, "long")
     ctx.stage(68, 70)
     if not final.exists() or final.stat().st_mtime < silent.stat().st_mtime:
         ctx.log("sound: mixing voice, music and effects")
@@ -596,6 +603,21 @@ def _run(ctx: RunContext) -> None:
 
     ctx.stage(94, 98)
     pk = write_package(ctx, title, script)
+    if not p.thumbnail.exists() and ctx.style.look == "painted":
+        from . import painted
+
+        raw = produce.still(
+            ctx, bundled, "Episode",
+            {"shots": [painted.thumbnail_shot(script.beats, pk.thumb_mood)], "timing": {"total_sec": 1, "scenes": [{"id": "thumb", "start_ms": 0, "end_ms": 1000}]}},
+            p.thumbnail.with_name("thumb-picture.png"), frame=20,
+        )  # fmt: skip
+        painted.thumbnail_words(
+            raw,
+            p.thumbnail,
+            pk.thumb_top,
+            pk.thumb_bottom,
+            ctx.cfg.root / "assets" / "fonts" / "Inter-ExtraBold.otf",
+        )
     if not p.thumbnail.exists():
         produce.still(
             ctx, bundled, "MoneyThumb", {"top": pk.thumb_top.upper(), "bottom": pk.thumb_bottom.upper(), "object": pk.thumb_object, "mood": pk.thumb_mood},

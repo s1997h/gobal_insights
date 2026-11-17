@@ -257,3 +257,13 @@ The cloud keeps its own run history and databases on the file share, separate fr
 | `Azure rate limit ... tokens-per-minute` | The model deployment's quota is too low (Step 2.3). Raise it, or switch `llm.provider` back to `anthropic`. |
 | `deployment ... was not found` | The names under `llm.azure_openai` in `config/models.yaml` don't match your Foundry deployments. |
 | A run says `ready_for_review` but you can't find it | Use the run id from `status.sh`. Cloud runs are only on the share, not in your local `out/`. |
+
+## Adding the ElevenLabs key to a job that already exists
+
+The If Lab's painted look reads its lines with ElevenLabs. Put `ELEVENLABS_API_KEY` in `.env` and run
+`bash infra/azure/deploy.sh` again, or give the existing job the key without redeploying:
+
+```bash
+az containerapp job secret set -n videopipe-job -g rg-videopipe --secrets elevenlabs-api-key=<your key>
+az containerapp job update -n videopipe-job -g rg-videopipe --set-env-vars ELEVENLABS_API_KEY=secretref:elevenlabs-api-key
+```

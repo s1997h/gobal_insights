@@ -10,8 +10,8 @@ import React from 'react';
  */
 
 export type Hair = 'short' | 'spiky' | 'long' | 'bob' | 'ponytail' | 'curly' | 'bald';
-export type Top = 'hoodie' | 'sweater' | 'tee';
-export type Expression = 'neutral' | 'happy' | 'worried' | 'shocked' | 'zombie' | 'bored' | 'sleep' | 'joy' | 'sad';
+export type Top = 'hoodie' | 'sweater' | 'tee' | 'suit' | 'labcoat';
+export type Expression = 'neutral' | 'happy' | 'worried' | 'shocked' | 'zombie' | 'bored' | 'sleep' | 'joy' | 'sad' | 'smug' | 'deadpan' | 'grin' | 'angry';
 export type Pose =
   | 'stand' | 'walk' | 'wave' | 'scared' | 'point' | 'zombie' | 'reach' | 'phone' | 'hold' | 'read' | 'think'
   | 'cheer' | 'stretch' | 'shrug' | 'slump' | 'call'
@@ -28,6 +28,10 @@ export interface Look {
   shoes?: string;
   glasses?: boolean;
   torn?: boolean; // ragged hem, for zombies
+  tie?: string; // suit tie colour
+  shirt?: string; // shirt under a suit or lab coat
+  mustache?: string; // mustache colour
+  iris?: string; // eye colour for the chibi face
 }
 
 export interface CharacterProps {
@@ -53,6 +57,10 @@ export interface CharacterProps {
   headOnly?: boolean;
   /** shoulders bare (shower) */
   bare?: boolean;
+  /** big-head anime style: large eyes, blush, expressive brows */
+  chibi?: boolean;
+  /** mouth openness while speaking, 0..1 (chibi only) */
+  talk?: number;
 }
 
 export const INK = '#2a2a2e';
@@ -231,6 +239,121 @@ const Face: React.FC<{expression: Expression; facing: number; look: number; open
   );
 };
 
+// --- chibi face: big glossy eyes, expressive brows, blush, a mouth that moves when talking ------
+const ChibiFace: React.FC<{expression: Expression; facing: number; look: number; open: number; glasses?: boolean; talk: number; iris: string; mustache?: string; skin: string}> = ({
+  expression, facing, look, open, glasses, talk, iris, mustache, skin,
+}) => {
+  const dx = facing * 5;
+  const dy = look * 0.6;
+  const E = [-16 + dx, 16 + dx];
+  const ey = 2 + dy;
+  const ln = {stroke: INK, strokeWidth: 2.4, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, fill: 'none'};
+  const by = ey - 15;
+  // brows
+  const brow = (cx: number, side: number) => {
+    const o = side; // -1 left eye, 1 right eye
+    switch (expression) {
+      case 'worried':
+      case 'sad':
+        return <path d={`M ${cx - 7} ${by + (o < 0 ? 1 : -4)} L ${cx + 7} ${by + (o < 0 ? -4 : 1)}`} {...ln} strokeWidth={2.8} />;
+      case 'angry':
+        return <path d={`M ${cx - 7} ${by + (o < 0 ? -4 : 3)} L ${cx + 7} ${by + (o < 0 ? 3 : -4)}`} {...ln} strokeWidth={3} />;
+      case 'shocked':
+        return <path d={`M ${cx - 7} ${by - 5} Q ${cx} ${by - 10} ${cx + 7} ${by - 5}`} {...ln} strokeWidth={2.8} />;
+      case 'smug':
+        return o > 0 ? <path d={`M ${cx - 7} ${by - 5} Q ${cx} ${by - 9} ${cx + 7} ${by - 4}`} {...ln} strokeWidth={2.8} /> : <path d={`M ${cx - 7} ${by} L ${cx + 7} ${by}`} {...ln} strokeWidth={2.8} />;
+      case 'deadpan':
+      case 'bored':
+        return <path d={`M ${cx - 7} ${by + 1} L ${cx + 7} ${by + 1}`} {...ln} strokeWidth={2.8} />;
+      default:
+        return <path d={`M ${cx - 7} ${by - 1} Q ${cx} ${by - 5} ${cx + 7} ${by - 1}`} {...ln} strokeWidth={2.8} />;
+    }
+  };
+  // eyes
+  const eye = (cx: number, i: number) => {
+    const blinkShut = open < 0.5;
+    if (expression === 'joy' || expression === 'grin' || blinkShut)
+      return <path key={i} d={`M ${cx - 8} ${ey + 2} Q ${cx} ${ey - (blinkShut ? -3 : 7)} ${cx + 8} ${ey + 2}`} {...ln} strokeWidth={3} />;
+    if (expression === 'sleep') return <path key={i} d={`M ${cx - 8} ${ey} Q ${cx} ${ey + 5} ${cx + 8} ${ey}`} {...ln} strokeWidth={3} />;
+    const shock = expression === 'shocked';
+    const rx = shock ? 9.5 : 8;
+    const ry = shock ? 11 : 10;
+    const ix = cx + dx * 0.35;
+    const lid = expression === 'deadpan' || expression === 'bored' || expression === 'smug' ? 0.5 : expression === 'sad' ? 0.25 : 0;
+    return (
+      <g key={i}>
+        <ellipse cx={cx} cy={ey} rx={rx} ry={ry} fill="#ffffff" stroke={INK} strokeWidth={2} />
+        {shock ? (
+          <circle cx={ix} cy={ey} r={2.8} fill={INK} />
+        ) : (
+          <g>
+            <ellipse cx={ix} cy={ey + 1} rx={5.8} ry={7.4} fill={iris} />
+            <ellipse cx={ix} cy={ey + 1.5} rx={3.2} ry={4.4} fill={INK} />
+            <circle cx={ix + 2.4} cy={ey - 3} r={2.1} fill="#ffffff" />
+            <circle cx={ix - 2.2} cy={ey + 4} r={1} fill="#ffffff" opacity={0.85} />
+          </g>
+        )}
+        {lid > 0 && <path d={`M ${cx - rx - 0.5} ${ey - ry + 2 * ry * lid} L ${cx + rx + 0.5} ${ey - ry + 2 * ry * lid} L ${cx + rx + 0.5} ${ey - ry - 1} L ${cx - rx - 0.5} ${ey - ry - 1} Z`} fill={skin} stroke="none" />}
+        {lid > 0 && <path d={`M ${cx - rx} ${ey - ry + 2 * ry * lid} L ${cx + rx} ${ey - ry + 2 * ry * lid}`} {...ln} strokeWidth={2.6} />}
+        {lid === 0 && <path d={`M ${cx - rx - 1} ${ey - ry * 0.55} Q ${cx} ${ey - ry - 3} ${cx + rx + 1} ${ey - ry * 0.55}`} {...ln} strokeWidth={3} />}
+      </g>
+    );
+  };
+  // mouth
+  const m = dx * 0.6;
+  const my = 19 + dy;
+  let mouth: React.ReactNode;
+  if (talk > 0.08) {
+    const h = 2.5 + 8 * talk;
+    const w = 6 + 3 * talk;
+    mouth = (
+      <g>
+        <ellipse cx={m} cy={my + h * 0.3} rx={w} ry={h} fill="#7a2e35" stroke={INK} strokeWidth={2} />
+        <ellipse cx={m} cy={my + h * 0.3 + h * 0.5} rx={w * 0.6} ry={h * 0.35} fill="#e0707a" />
+      </g>
+    );
+  } else if (expression === 'joy' || expression === 'grin')
+    mouth = <path d={`M ${m - 10} ${my - 3} Q ${m} ${my + 13} ${m + 10} ${my - 3} Z`} fill="#7a2e35" stroke={INK} strokeWidth={2.2} strokeLinejoin="round" />;
+  else if (expression === 'happy') mouth = <path d={`M ${m - 8} ${my - 2} Q ${m} ${my + 7} ${m + 8} ${my - 2}`} {...ln} />;
+  else if (expression === 'shocked') mouth = <ellipse cx={m} cy={my + 2} rx={5.5} ry={7.5} fill="#7a2e35" stroke={INK} strokeWidth={2} />;
+  else if (expression === 'worried' || expression === 'sad') mouth = <path d={`M ${m - 7} ${my + 3} Q ${m - 3} ${my - 2} ${m} ${my + 2} Q ${m + 3} ${my - 2} ${m + 7} ${my + 3}`} {...ln} />;
+  else if (expression === 'smug') mouth = <path d={`M ${m - 7} ${my + 1} Q ${m + 2} ${my + 4} ${m + 9} ${my - 3}`} {...ln} />;
+  else if (expression === 'angry') mouth = <path d={`M ${m - 7} ${my + 3} Q ${m} ${my - 3} ${m + 7} ${my + 3}`} {...ln} />;
+  else if (expression === 'deadpan' || expression === 'bored') mouth = <path d={`M ${m - 6} ${my + 1} L ${m + 6} ${my + 1}`} {...ln} />;
+  else if (expression === 'sleep') mouth = <ellipse cx={m} cy={my} rx={3} ry={2.2} fill="#7a2e35" />;
+  else mouth = <path d={`M ${m - 5} ${my} Q ${m} ${my + 3} ${m + 5} ${my}`} {...ln} />;
+  const blush = expression === 'joy' || expression === 'happy' || expression === 'grin' || expression === 'shocked' || expression === 'worried';
+  return (
+    <g>
+      {blush && (
+        <g opacity={expression === 'shocked' || expression === 'worried' ? 0.35 : 0.5}>
+          <ellipse cx={E[0] - 6} cy={ey + 13} rx={8} ry={4.5} fill="#f08a8a" />
+          <ellipse cx={E[1] + 6} cy={ey + 13} rx={8} ry={4.5} fill="#f08a8a" />
+          {[-1, 1].map((sd) => [0, 1, 2].map((j) => (
+            <path key={`${sd}${j}`} d={`M ${(sd < 0 ? E[0] - 11 : E[1] + 1) + j * 4} ${ey + 15} l 2 -4`} stroke="#d9605f" strokeWidth={1.2} strokeLinecap="round" />
+          )))}
+        </g>
+      )}
+      {E.map((cx, i) => brow(cx, i === 0 ? -1 : 1))}
+      {E.map(eye)}
+      {(expression === 'worried' || expression === 'shocked') && (
+        <path d={`M ${E[1] + 18} ${ey - 16} q 5 8 0 12 q -5 -4 0 -12`} fill="#9fdcff" stroke={INK} strokeWidth={1.6} />
+      )}
+      {expression === 'sad' && <path d={`M ${E[1] + 2} ${ey + 10} q 3 7 0 10 q -3 -3 0 -10`} fill="#9fdcff" stroke={INK} strokeWidth={1.4} />}
+      {mustache && <path d={`M ${m - 13} ${my - 4} Q ${m - 6} ${my - 10} ${m} ${my - 6} Q ${m + 6} ${my - 10} ${m + 13} ${my - 4} Q ${m + 6} ${my - 2} ${m} ${my - 4} Q ${m - 6} ${my - 2} ${m - 13} ${my - 4} Z`} fill={mustache} stroke={INK} strokeWidth={1.6} />}
+      {mouth}
+      {glasses && (
+        <g fill="none" stroke={INK} strokeWidth={2.4}>
+          <circle cx={E[0]} cy={ey} r={13} fill="#ffffff" fillOpacity={0.08} />
+          <circle cx={E[1]} cy={ey} r={13} fill="#ffffff" fillOpacity={0.08} />
+          <path d={`M ${E[0] + 13} ${ey - 2} Q ${(E[0] + E[1]) / 2} ${ey - 6} ${E[1] - 13} ${ey - 2}`} />
+          <path d={`M ${E[0] - 9} ${ey - 9} l 4 -2`} stroke="#ffffff" strokeWidth={2} opacity={0.7} />
+        </g>
+      )}
+    </g>
+  );
+};
+
 // --- held items, drawn centred on 0,0 at the hand ----------------------------------------------
 export const ItemShape: React.FC<{item: Item; glow?: boolean}> = ({item, glow}) => {
   const k = {stroke: INK, strokeWidth: 2.4, strokeLinejoin: 'round' as const};
@@ -365,6 +488,8 @@ export const Character: React.FC<CharacterProps> = ({
   glow = false,
   headOnly = false,
   bare = false,
+  chibi = false,
+  talk = 0,
 }) => {
   const tt = t + seed * 0.37;
   const walking = moving && (pose === 'walk' || pose === 'zombie');
@@ -485,7 +610,14 @@ export const Character: React.FC<CharacterProps> = ({
     ? 'M -33 -196 Q -36 -196 -36 -186 L -33 -106 L -24 -98 L -16 -106 L -7 -96 L 2 -106 L 11 -97 L 20 -106 L 28 -98 L 33 -106 L 36 -186 Q 36 -196 33 -196 Z'
     : 'M -33 -196 Q -36 -196 -36 -186 L -33 -108 Q -33 -104 -29 -104 L 29 -104 Q 33 -104 33 -108 L 36 -186 Q 36 -196 33 -196 Z';
 
-  const head = (
+  const head = chibi ? (
+    <g transform={`translate(0 -262) rotate(${headTilt}) scale(1.6)`}>
+      <ellipse cx={0} cy={0} rx={45} ry={43} fill={look.skin} stroke={INK} strokeWidth={SW / 1.3} />
+      <ChibiFace expression={expression} facing={facing} look={lookDown} open={blink(t, seed)} glasses={look.glasses} talk={talk} iris={look.iris ?? '#6b4a2e'} mustache={look.mustache} skin={look.skin} />
+      {hairFront(look.hair, look.hairColor)}
+      {glow && <ellipse cx={0} cy={10} rx={46} ry={40} fill="url(#phoneGlow)" />}
+    </g>
+  ) : (
     <g transform={`translate(0 -252) rotate(${headTilt})`}>
       {hairBack(look.hair, look.hairColor)}
       <circle cx={0} cy={0} r={44} fill={look.skin} stroke={INK} strokeWidth={SW} />
@@ -521,6 +653,7 @@ export const Character: React.FC<CharacterProps> = ({
         <Leg x={sitting ? 16 : 12} top={legTop} len={legLen * (1 - 0.14 * legLift[1])} pants={look.pants} shoes={shoes} side={1} />
         {sitting && <rect x={-34} y={-70} width={68} height={22} rx={9} fill={look.pants} stroke={INK} strokeWidth={SW} />}
         <g transform={`translate(0 ${drop})`}>
+          {chibi && <g transform={`translate(0 -262) rotate(${headTilt}) scale(1.6)`}>{hairBack(look.hair, look.hairColor)}</g>}
           <rect x={-6} y={-210} width={12} height={18} fill={look.skin} stroke={INK} strokeWidth={SW} />
           <path d={torso} fill={top} stroke={INK} strokeWidth={SW} strokeLinejoin="round" />
           {topKind === 'hoodie' && (
@@ -531,6 +664,21 @@ export const Character: React.FC<CharacterProps> = ({
             </g>
           )}
           {topKind === 'sweater' && <path d="M -15 -196 L 0 -176 L 15 -196 Z" fill="#f4f1ea" stroke={INK} strokeWidth={SW} strokeLinejoin="round" />}
+          {topKind === 'suit' && (
+            <g>
+              <path d="M -18 -196 L 0 -150 L 18 -196 Z" fill={look.shirt ?? '#f6f3ec'} stroke={INK} strokeWidth={SW} strokeLinejoin="round" />
+              {look.tie !== 'none' && <path d="M -4 -190 L 4 -190 L 6 -160 L 0 -150 L -6 -160 Z" fill={look.tie ?? '#b8423a'} stroke={INK} strokeWidth={2} strokeLinejoin="round" />}
+              <path d="M -18 -196 L -8 -166 L -22 -176 M 18 -196 L 8 -166 L 22 -176" fill="none" stroke={darken(top, 0.6)} strokeWidth={2.4} strokeLinejoin="round" />
+              <circle cx={0} cy={-130} r={3} fill={darken(top, 0.6)} />
+            </g>
+          )}
+          {topKind === 'labcoat' && (
+            <g>
+              <path d="M -14 -196 L 0 -170 L 14 -196 Z" fill={look.shirt ?? '#6a8fbf'} stroke={INK} strokeWidth={SW} strokeLinejoin="round" />
+              <path d="M 0 -170 L 0 -106" stroke={INK} strokeWidth={2} />
+              <rect x={10} y={-160} width={14} height={12} rx={2} fill="none" stroke={darken(top, 0.75)} strokeWidth={2} />
+            </g>
+          )}
           {head}
         </g>
         <Arm s={shL} h={Ld} side={-1} sleeve={sleeve} skin={look.skin} tee={topKind === 'tee'} top={top} />

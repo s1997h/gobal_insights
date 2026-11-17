@@ -17,13 +17,22 @@ SetName = Literal[
     "studio", "bazaar", "kirana", "datacentre", "pub", "bank_front",
     "bedroom", "living", "street", "cafe", "park", "office", "kitchen",
     "lab", "factory", "boardroom", "store", "garage", "stage",
+    "conf", "exec", "shop", "startup",
 ]  # fmt: skip
 BIZ_SETS = {"lab", "factory", "boardroom", "store", "garage", "stage"}
-Who = Literal["you", "maya", "leo", "zoe", "sam", "ana"]
+Who = Literal[
+    "you", "maya", "leo", "zoe", "sam", "ana",
+    # the painted look's cast (see PAINTED_GUIDE)
+    "you_old", "boss", "exec_a", "exec_b", "exec_c", "woman", "anchor", "expert", "rival",
+    "young_a", "young_b", "kid_a", "kid_b",
+]  # fmt: skip
 Pose = Literal[
-    "stand", "walk", "wave", "scared", "point", "phone", "hold", "read", "think", "cheer", "shrug", "slump"
-]
-Mood = Literal["neutral", "happy", "worried", "shocked", "bored", "joy", "sad"]
+    "stand", "walk", "wave", "scared", "point", "phone", "hold", "read", "think", "cheer", "shrug", "slump",
+    "sit", "stretch", "reach",
+]  # fmt: skip
+Mood = Literal[
+    "neutral", "happy", "worried", "shocked", "bored", "joy", "sad", "smug", "deadpan", "grin", "angry"
+]  # fmt: skip
 View = Literal["scene", "object", "stat", "title", "list", "checklist", "duo", "bars", "end"]
 SceneProp = Literal[
     "none", "chai_stall", "atm", "petrol_pump", "auto", "veg_cart", "shutter", "queue", "tv", "sign", "desk",
@@ -32,7 +41,10 @@ SceneProp = Literal[
 Obj = Literal[
     "phone_fail", "phone_ok", "wallet", "banknote", "ledger", "mystery",
     "balance", "balance_locked", "cheque", "pins", "calendar",
+    # story objects (painted look)
+    "napkin", "drawer", "memo", "old_tv", "prototype", "news", "gadget", "website",
 ]  # fmt: skip
+STORY_OBJS = {"napkin", "drawer", "memo", "old_tv", "prototype", "news", "gadget", "website"}
 
 ThumbObj = Literal[
     "phone_fail",
@@ -56,6 +68,41 @@ VIEW_GUIDE = """\
 - duo: two things compared. Fields: label (the question), left {big, label}, right {big, label}; big max 6 characters.
 - bars: a bar chart. Fields: label (chart title), bars (2-4, each {name, value 0-100, text}), source (required).
 - end: the closing card. Fields: label (the next video's title)."""
+
+PAINTED_GUIDE = """\
+The video is drawn as painted backgrounds with big-head cartoon characters whose mouths move when they talk.
+
+Who speaks each beat: `speaker`. "narrator" (the default) tells the story. Anyone else is a character saying
+their line out loud: they must be in that beat's `people` (or be the anchor of a `news` object). The narrator's
+voice also plays "you", so the viewer hears themselves talk. Dialogue beats are short: one or two sentences,
+max 25 words, in quotes-free spoken English ("Could we build a camera with no film?").
+
+Cast (`people[].who`), each with one voice:
+- you: the viewer as a young adult (narrator's voice). you_old: the viewer, decades later (narrator's voice).
+- boss: a manager with a mustache and tie. exec_a, exec_b, exec_c: senior executives in suits. expert: an analyst
+  with glasses. (all: an older man's voice)
+- woman: a colleague in a lab coat. anchor: a TV news anchor. rival: a woman in a green suit who leads a rival.
+  young_a, young_b: young founders or customers. kid_a, kid_b: children. (all: a woman's voice; kids never speak)
+Never use a real person's name for a cast member's lines; real people appear only in the narration.
+
+Places (`set`), each a painted room: lab (workshop/research lab), living (living room at night, a sofa and TV),
+conf (wood-panelled conference room), exec (an executive's office with a big desk), shop (a camera/electronics
+shop counter), factory (a production floor), office (an open office with computers), startup (a loft with a
+photo wall), street (a city street with shops). Pick the closest; the same place can appear many times.
+
+Story objects (`view: object`), drawn big over the last place:
+- napkin: a business model sketched on a napkin, as a chain of 4 steps. items: the steps ("Cheap camera",
+  "Film", "Chemicals", "Prints"); prop_text: who gets the money ("KODAK"). broken: true crosses it out.
+- drawer: the running gag of what gets hidden. items: what is inside, from prototype, report, idea (the last one
+  drops in during this beat); prop_text: the label on the drawer (default "LATER"); ok: true leaves it open.
+- memo: an internal report. prop_text: its title; sub: small print; items: up to 2 lines "BAD NEWS|Digital
+  could replace film"; label: a stamp ("CONFIDENTIAL").
+- old_tv: an old TV painting a photo in line by line. ok: false shows static where the face should be.
+- prototype: the invention on a workbench, glowing. prop_text: optional label.
+- news: a TV news broadcast. prop_text: the headline; items: ticker lines; label: the company in the graphic
+  box; sub: a stamp on it ("BANKRUPT"). speaker: anchor reads the news.
+- gadget: a product (a camera, a phone). prop_text: the brand; sub: a price tag ("$20,000", "-$60").
+- website: an app or website on a phone. prop_text: its name; sub: a badge ("75 MILLION USERS")."""
 
 
 # Words that name a part of the script instead of something in the story. They must never reach the screen.
@@ -92,6 +139,11 @@ class Bar(BaseModel):
 class Beat(BaseModel):
     say: str = Field(min_length=1, description="The narration for this shot. One to three short sentences.")
     view: View
+    speaker: Who | Literal["narrator"] = Field(
+        default="narrator",
+        description="Who says `say`: the narrator, or a character on screen saying their line out loud.",
+    )
+    broken: bool = Field(default=False, description="napkin only: cross out the business model.")
     chapter: str | None = Field(
         default=None, description="Set on the first beat of a new chapter: its title."
     )
@@ -201,6 +253,22 @@ class Beat(BaseModel):
             p.append(f"beat {n}: `sign` is {len(self.sign)} characters; max 14")
         if self.clock and not re.fullmatch(r"(1[0-2]|[1-9]):[0-5]\d (AM|PM)", self.clock):
             p.append(f'beat {n}: clock {self.clock!r} must look like "9:30 AM"')
+        if self.speaker != "narrator":
+            if self.speaker in ("kid_a", "kid_b"):
+                p.append(f"beat {n}: kids never speak; give the line to the narrator or an adult")
+            elif v == "object" and self.object == "news":
+                if self.speaker != "anchor":
+                    p.append(f"beat {n}: only the anchor speaks over a `news` object")
+            elif v != "scene":
+                p.append(
+                    f"beat {n}: {self.speaker} speaks, so the beat must be a `scene` with them in `people`"
+                )
+            elif self.speaker not in {x.who for x in self.people}:
+                p.append(f"beat {n}: {self.speaker} speaks, so put them in `people`")
+            if w > 25:
+                p.append(f"beat {n}: a spoken line is {w} words; keep dialogue to 25 words or split it")
+        if v == "object" and self.object in ("napkin", "drawer", "memo") and len(self.items) > 4:
+            p.append(f"beat {n}: a {self.object} takes at most 4 items")
         return p
 
 
@@ -229,10 +297,18 @@ class EpisodeScript(BaseModel):
     def words(self) -> int:
         return sum(len(b.say.split()) for b in self.beats)
 
-    def problems(self, target_words: int) -> list[str]:
+    def problems(self, target_words: int, painted: bool = False) -> list[str]:
         p: list[str] = []
         for i, b in enumerate(self.beats, 1):
             p += b.problems(i)
+        if painted:
+            talk = sum(1 for b in self.beats if b.speaker != "narrator")
+            want = max(4, len(self.beats) // 8)
+            if talk < want:
+                p.append(
+                    f"only {talk} beats are spoken by characters; write at least {want} short dialogue beats "
+                    "(set `speaker` to someone in the scene) so the story plays out instead of being described"
+                )
         w = self.words()
         if not 0.7 * target_words <= w <= 1.3 * target_words:
             p.append(f"the script is {w} words; write about {target_words}")
@@ -276,7 +352,15 @@ class EpisodeScript(BaseModel):
             {"say": "Eight o'clock. You're at the tea stall, and your phone won't pay.", "view": "scene", "set": "bazaar",
              "people": [{"who": "you", "pose": "phone", "mood": "worried"}], "scene_prop": "chai_stall", "clock": "8:00 AM",
              "chapter": "8 AM: the first failure"},
+            {"say": "Card machine's down. Cash only today.", "view": "scene", "set": "cafe", "speaker": "boss",
+             "people": [{"who": "you", "pose": "phone", "mood": "worried"}, {"who": "boss", "pose": "shrug", "mood": "deadpan"}]},
+            {"say": "Cash? Who carries cash?", "view": "scene", "set": "cafe", "speaker": "you",
+             "people": [{"who": "you", "pose": "shrug", "mood": "shocked"}, {"who": "boss", "pose": "stand", "mood": "deadpan"}]},
+            {"say": "Then I hope you're good at washing dishes.", "view": "scene", "set": "cafe", "speaker": "boss",
+             "people": [{"who": "you", "pose": "stand", "mood": "sad"}, {"who": "boss", "pose": "point", "mood": "smug"}]},
             {"say": "No apps. No cards. No machines.", "view": "list", "items": ["No apps", "No cards", "No machines"]},
+            {"say": "Is everyone's phone broken?", "view": "scene", "set": "park", "speaker": "woman",
+             "people": [{"who": "woman", "pose": "phone", "mood": "worried"}, {"who": "you", "pose": "shrug", "mood": "worried"}]},
             {"say": "By tonight, the most valuable thing on your street will be a notebook.", "view": "object", "object": "mystery"},
             {"say": "Offline placeholder fact: about half of payments went through that day.", "view": "stat", "big": "50%",
              "label": "of payments went through", "source": "Offline placeholder, 2026"},

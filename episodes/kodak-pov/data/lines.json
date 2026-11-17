@@ -1,0 +1,848 @@
+[
+ {
+  "i": 0,
+  "who": "N",
+  "text": "January nineteenth, twenty twelve. You're sixty-one, retired, and half asleep in front of the evening news.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_a",
+  "src_start": 0,
+  "dur": 6.112653
+ },
+ {
+  "i": 1,
+  "who": "J",
+  "text": "Breaking news tonight. Eastman Kodak, the hundred-and-thirty-one-year-old photography giant, has filed for bankruptcy.",
+  "voice": "EXAVITQu4vr4xnSDxMaL",
+  "src": "sarah",
+  "src_start": 0,
+  "dur": 7.47102
+ },
+ {
+  "i": 2,
+  "who": "N",
+  "text": "You sit up.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_a",
+  "src_start": 6.112653,
+  "dur": 0.679184
+ },
+ {
+  "i": 3,
+  "who": "N",
+  "text": "Kodak. The company where you spent most of your working life.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_a",
+  "src_start": 6.791837,
+  "dur": 3.474286
+ },
+ {
+  "i": 4,
+  "who": "N",
+  "text": "And the craziest part? You're not even surprised.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_a",
+  "src_start": 10.266122,
+  "dur": 3.004082
+ },
+ {
+  "i": 5,
+  "who": "N",
+  "text": "Because thirty-seven years ago, you built the thing that killed it. And they told you to keep it quiet.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_a",
+  "src_start": 13.270204,
+  "dur": 6.19102
+ },
+ {
+  "i": 6,
+  "who": "N",
+  "text": "To understand how, we need to go back.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_a",
+  "src_start": 19.461224,
+  "dur": 2.115918
+ },
+ {
+  "i": 7,
+  "who": "N",
+  "text": "Nineteen seventy-four. You're twenty-three, fresh out of engineering school, and you've just landed a job at Kodak.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_a",
+  "src_start": 21.577143,
+  "dur": 6.19102
+ },
+ {
+  "i": 8,
+  "who": "N",
+  "text": "And Kodak isn't just a company. It's photography. Cameras, film, chemicals, paper. If you took a photo in America, Kodak probably got paid.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_a",
+  "src_start": 27.768163,
+  "dur": 8.672653
+ },
+ {
+  "i": 9,
+  "who": "N",
+  "text": "One afternoon, your boss stops by your desk. The whole conversation takes about thirty seconds.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_a",
+  "src_start": 36.440816,
+  "dur": 4.440816
+ },
+ {
+  "i": 10,
+  "who": "B",
+  "text": "Hey. Could we build a camera using solid-state imagers?",
+  "voice": "pqHfZKP75CvOlQylNhV4",
+  "src": "bill",
+  "src_start": 0,
+  "dur": 4.519184
+ },
+ {
+  "i": 11,
+  "who": "N",
+  "text": "You blink.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_a",
+  "src_start": 40.881633,
+  "dur": 0.679184
+ },
+ {
+  "i": 12,
+  "who": "Y",
+  "text": "Using what?",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_a",
+  "src_start": 41.560816,
+  "dur": 1.567347
+ },
+ {
+  "i": 13,
+  "who": "B",
+  "text": "Those new electronic light sensors. See if you can make a picture with one.",
+  "voice": "pqHfZKP75CvOlQylNhV4",
+  "src": "bill",
+  "src_start": 4.519184,
+  "dur": 5.250612
+ },
+ {
+  "i": 14,
+  "who": "Y",
+  "text": "A camera with no film? Here? At the film company?",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_a",
+  "src_start": 43.128163,
+  "dur": 3.239184
+ },
+ {
+  "i": 15,
+  "who": "B",
+  "text": "Just see if it works.",
+  "voice": "pqHfZKP75CvOlQylNhV4",
+  "src": "bill",
+  "src_start": 9.769796,
+  "dur": 1.959184
+ },
+ {
+  "i": 16,
+  "who": "N",
+  "text": "And he walks off. That's it. That's the whole assignment.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_a",
+  "src_start": 46.367347,
+  "dur": 3.239184
+ },
+ {
+  "i": 17,
+  "who": "N",
+  "text": "So you do what any reasonable engineer would do. You raid every storeroom on the campus.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_a",
+  "src_start": 49.606531,
+  "dur": 4.754286
+ },
+ {
+  "i": 18,
+  "who": "N",
+  "text": "A lens from a movie camera. A cassette tape recorder. A stack of circuit boards. And a lot of batteries.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_a",
+  "src_start": 54.360816,
+  "dur": 6.844082
+ },
+ {
+  "i": 19,
+  "who": "N",
+  "text": "A year later, it's finished. It weighs eight pounds. It looks like a toaster. And it takes pictures without film.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_a",
+  "src_start": 61.204898,
+  "dur": 6.60898
+ },
+ {
+  "i": 20,
+  "who": "N",
+  "text": "December, nineteen seventy-five. You need someone to photograph. You walk down the hall and find a lab technician named Joy.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_a",
+  "src_start": 67.813878,
+  "dur": 6.426122
+ },
+ {
+  "i": 21,
+  "who": "Y",
+  "text": "Joy! Can I take your picture? It's for science.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_a",
+  "src_start": 74.24,
+  "dur": 3.474286
+ },
+ {
+  "i": 22,
+  "who": "N",
+  "text": "She shrugs and sits very still. Click.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_a",
+  "src_start": 77.714286,
+  "dur": 2.847347
+ },
+ {
+  "i": 23,
+  "who": "N",
+  "text": "And then you wait. Twenty-three seconds. Just to save one photo onto a cassette tape.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_a",
+  "src_start": 80.561633,
+  "dur": 6.112653
+ },
+ {
+  "i": 24,
+  "who": "N",
+  "text": "You rush back to the lab, plug the tape into a TV, and slowly, line by line, a picture appears.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_a",
+  "src_start": 86.674286,
+  "dur": 6.530612
+ },
+ {
+  "i": 25,
+  "who": "N",
+  "text": "Her hair. A white background. And where her face should be: static.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_a",
+  "src_start": 93.204898,
+  "dur": 4.754286
+ },
+ {
+  "i": 26,
+  "who": "N",
+  "text": "Joy leans in. She stares at the screen for a long moment.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_a",
+  "src_start": 97.959184,
+  "dur": 3.474286
+ },
+ {
+  "i": 27,
+  "who": "J",
+  "text": "Needs work.",
+  "voice": "EXAVITQu4vr4xnSDxMaL",
+  "src": "sarah",
+  "src_start": 7.47102,
+  "dur": 1.149388
+ },
+ {
+  "i": 28,
+  "who": "N",
+  "text": "And she walks out.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_a",
+  "src_start": 101.433469,
+  "dur": 1.48898
+ },
+ {
+  "i": 29,
+  "who": "N",
+  "text": "But you're grinning. Because she has no idea what she just saw. The world's first digital photo.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_a",
+  "src_start": 102.922449,
+  "dur": 6.347755
+ },
+ {
+  "i": 30,
+  "who": "N",
+  "text": "An hour later, you find the problem. A few wires the wrong way round. You fix it, and there she is. Face and all.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_a",
+  "src_start": 109.270204,
+  "dur": 7.549388
+ },
+ {
+  "i": 31,
+  "who": "N",
+  "text": "Now you just have to show your bosses. How hard could that be?",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_a",
+  "src_start": 116.819592,
+  "dur": 2.925714
+ },
+ {
+  "i": 32,
+  "who": "N",
+  "text": "Nineteen seventy-six. A windowless conference room. A long table full of very important people in very expensive suits.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_a",
+  "src_start": 119.745306,
+  "dur": 8.907755
+ },
+ {
+  "i": 33,
+  "who": "N",
+  "text": "You don't make a speech. You just point your toaster at them. Click.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_a",
+  "src_start": 128.653061,
+  "dur": 3.317551
+ },
+ {
+  "i": 34,
+  "who": "N",
+  "text": "You pop out the tape, slide it into the player, and their own faces show up on a TV.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_a",
+  "src_start": 131.970612,
+  "dur": 5.146122
+ },
+ {
+  "i": 35,
+  "who": "N",
+  "text": "You're ready for questions. How does it work? How did you build it?",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_a",
+  "src_start": 137.116735,
+  "dur": 2.690612
+ },
+ {
+  "i": 36,
+  "who": "N",
+  "text": "Instead, a man at the end of the table folds his arms.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_a",
+  "src_start": 139.807347,
+  "dur": 2.586122
+ },
+ {
+  "i": 37,
+  "who": "B",
+  "text": "Why would anyone want to look at their pictures on a television?",
+  "voice": "pqHfZKP75CvOlQylNhV4",
+  "src": "bill",
+  "src_start": 11.72898,
+  "dur": 3.709388
+ },
+ {
+  "i": 38,
+  "who": "N",
+  "text": "Another one leans in.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_a",
+  "src_start": 142.393469,
+  "dur": 1.07102
+ },
+ {
+  "i": 39,
+  "who": "B",
+  "text": "And where do you keep them? What does a photo album even look like?",
+  "voice": "pqHfZKP75CvOlQylNhV4",
+  "src": "bill",
+  "src_start": 15.438367,
+  "dur": 4.754286
+ },
+ {
+  "i": 40,
+  "who": "N",
+  "text": "And then, the big one.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_a",
+  "src_start": 143.46449,
+  "dur": 1.567347
+ },
+ {
+  "i": 41,
+  "who": "B",
+  "text": "When could a customer actually buy this?",
+  "voice": "pqHfZKP75CvOlQylNhV4",
+  "src": "bill",
+  "src_start": 20.192653,
+  "dur": 2.690612
+ },
+ {
+  "i": 42,
+  "who": "Y",
+  "text": "Honestly? Fifteen, maybe twenty years.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_a",
+  "src_start": 145.031837,
+  "dur": 2.847347
+ },
+ {
+  "i": 43,
+  "who": "N",
+  "text": "The whole room relaxes. Twenty years is forever.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_a",
+  "src_start": 147.879184,
+  "dur": 3.004082
+ },
+ {
+  "i": 44,
+  "who": "N",
+  "text": "Years later, you'd sum up their reaction in one line. That's cute, but don't tell anyone about it.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_a",
+  "src_start": 150.883265,
+  "dur": 5.146122
+ },
+ {
+  "i": 45,
+  "who": "N",
+  "text": "After the meeting, one of the executives pulls you aside, grabs a napkin, and starts drawing.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_a",
+  "src_start": 156.029388,
+  "dur": 4.91102
+ },
+ {
+  "i": 46,
+  "who": "B",
+  "text": "Son, let me show you how Kodak makes money. We sell you a cheap camera. Then you buy film. Then chemicals. Then paper. Then prints.",
+  "voice": "pqHfZKP75CvOlQylNhV4",
+  "src": "bill",
+  "src_start": 22.883265,
+  "dur": 12.120816
+ },
+ {
+  "i": 47,
+  "who": "B",
+  "text": "Every time somebody presses that button, we get paid.",
+  "voice": "pqHfZKP75CvOlQylNhV4",
+  "src": "bill",
+  "src_start": 35.004082,
+  "dur": 3.63102
+ },
+ {
+  "i": 48,
+  "who": "N",
+  "text": "And he isn't exaggerating. In nineteen seventy-six, Kodak sold ninety percent of the film in America, with profit margins of around eighty percent.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_b",
+  "src_start": 0,
+  "dur": 8.829388
+ },
+ {
+  "i": 49,
+  "who": "B",
+  "text": "And you, son, have built a camera that doesn't need film.",
+  "voice": "pqHfZKP75CvOlQylNhV4",
+  "src": "bill",
+  "src_start": 38.635102,
+  "dur": 4.205714
+ },
+ {
+  "i": 50,
+  "who": "Y",
+  "text": "When you put it like that.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_b",
+  "src_start": 8.829388,
+  "dur": 0.992653
+ },
+ {
+  "i": 51,
+  "who": "B",
+  "text": "It's a very nice toaster.",
+  "voice": "pqHfZKP75CvOlQylNhV4",
+  "src": "bill",
+  "src_start": 42.840816,
+  "dur": 2.037551
+ },
+ {
+  "i": 52,
+  "who": "N",
+  "text": "So your camera goes into a drawer. Not destroyed. Not sold. Just somewhere safe, where it can't hurt anybody.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_b",
+  "src_start": 9.822041,
+  "dur": 6.844082
+ },
+ {
+  "i": 53,
+  "who": "N",
+  "text": "And honestly? If you'd been sitting on their side of the table, you might have done exactly the same.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_b",
+  "src_start": 16.666122,
+  "dur": 4.989388
+ },
+ {
+  "i": 54,
+  "who": "N",
+  "text": "For a few years, the drawer works perfectly. Then, in nineteen eighty-one, Sony shows off an electronic camera that saves photos on a floppy disk.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_b",
+  "src_start": 21.65551,
+  "dur": 8.124082
+ },
+ {
+  "i": 55,
+  "who": "N",
+  "text": "Suddenly, Kodak's biggest customers are nervous. So Kodak's head of market research, Vince Barabba, is asked a simple question. Should we be worried?",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_b",
+  "src_start": 29.779592,
+  "dur": 10.605714
+ },
+ {
+  "i": 56,
+  "who": "N",
+  "text": "His report comes back with bad news, and good news.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_b",
+  "src_start": 40.385306,
+  "dur": 3.082449
+ },
+ {
+  "i": 57,
+  "who": "N",
+  "text": "The bad news: digital could replace film. The good news: it'll take about ten years. Kodak has a decade to get ready.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_b",
+  "src_start": 43.467755,
+  "dur": 7.810612
+ },
+ {
+  "i": 58,
+  "who": "N",
+  "text": "A ten-year head start. In writing. On the desk of the people who could act on it.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_b",
+  "src_start": 51.278367,
+  "dur": 5.067755
+ },
+ {
+  "i": 59,
+  "who": "N",
+  "text": "And over that decade, Kodak does very little to prepare. Because why would it? The film money just keeps getting bigger.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_b",
+  "src_start": 56.346122,
+  "dur": 7.314286
+ },
+ {
+  "i": 60,
+  "who": "B",
+  "text": "Ten billion dollars in sales this year! Who needs digital?",
+  "voice": "pqHfZKP75CvOlQylNhV4",
+  "src": "bill",
+  "src_start": 44.878367,
+  "dur": 3.970612
+ },
+ {
+  "i": 61,
+  "who": "N",
+  "text": "So the report goes into the drawer too. Right next to your toaster.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_b",
+  "src_start": 63.660408,
+  "dur": 3.239184
+ },
+ {
+  "i": 62,
+  "who": "N",
+  "text": "You keep working on digital anyway. Quietly. Year after year.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_b",
+  "src_start": 66.899592,
+  "dur": 3.709388
+ },
+ {
+  "i": 63,
+  "who": "N",
+  "text": "In the nineteen-nineties, Kodak finally sells its first digital cameras. For professionals. At around twenty thousand dollars each.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_b",
+  "src_start": 70.60898,
+  "dur": 7.88898
+ },
+ {
+  "i": 64,
+  "who": "Y",
+  "text": "Twenty thousand?",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_b",
+  "src_start": 78.497959,
+  "dur": 1.410612
+ },
+ {
+  "i": 65,
+  "who": "N",
+  "text": "Meanwhile, the rest of the world is catching up. Fast.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_b",
+  "src_start": 79.908571,
+  "dur": 3.082449
+ },
+ {
+  "i": 66,
+  "who": "N",
+  "text": "In two thousand and one, Kodak goes big on digital. It even buys a photo-sharing website called Ofoto.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_b",
+  "src_start": 82.99102,
+  "dur": 6.426122
+ },
+ {
+  "i": 67,
+  "who": "N",
+  "text": "People upload their photos and share albums with their friends. It grows to more than seventy-five million users. Years before Instagram even exists.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_b",
+  "src_start": 89.417143,
+  "dur": 9.090612
+ },
+ {
+  "i": 68,
+  "who": "N",
+  "text": "But Kodak runs it the only way it knows how.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_b",
+  "src_start": 98.507755,
+  "dur": 2.037551
+ },
+ {
+  "i": 69,
+  "who": "B",
+  "text": "Wonderful. Now, would you like prints?",
+  "voice": "pqHfZKP75CvOlQylNhV4",
+  "src": "bill",
+  "src_start": 48.84898,
+  "dur": 2.76898
+ },
+ {
+  "i": 70,
+  "who": "N",
+  "text": "And by two thousand five, Kodak sells more digital cameras in America than anyone else. Number one.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_b",
+  "src_start": 100.545306,
+  "dur": 6.60898
+ },
+ {
+  "i": 71,
+  "who": "N",
+  "text": "There's just one tiny problem. A Harvard case study found Kodak was losing about sixty dollars on every digital camera it sold.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_b",
+  "src_start": 107.154286,
+  "dur": 7.706122
+ },
+ {
+  "i": 72,
+  "who": "B",
+  "text": "Sixty dollars? Per camera?",
+  "voice": "pqHfZKP75CvOlQylNhV4",
+  "src": "bill",
+  "src_start": 51.617959,
+  "dur": 2.76898
+ },
+ {
+  "i": 73,
+  "who": "N",
+  "text": "Because a digital camera needs no film. No chemicals. No prints. The money machine has nowhere to plug in.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_b",
+  "src_start": 114.860408,
+  "dur": 7.810612
+ },
+ {
+  "i": 74,
+  "who": "N",
+  "text": "And film is still the heart of the company. In two thousand, it brings in nearly three-quarters of Kodak's revenue. Ten years later, world demand has fallen to less than a tenth.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_b",
+  "src_start": 122.67102,
+  "dur": 10.684082
+ },
+ {
+  "i": 75,
+  "who": "N",
+  "text": "Then phones get cameras. And suddenly, everyone on Earth has your invention in their pocket.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_b",
+  "src_start": 133.355102,
+  "dur": 4.754286
+ },
+ {
+  "i": 76,
+  "who": "N",
+  "text": "Somewhere in there, the world finally finds out who built the first one. You. Your kids think you're cool. For about ten minutes.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_b",
+  "src_start": 138.109388,
+  "dur": 8.124082
+ },
+ {
+  "i": 77,
+  "who": "N",
+  "text": "Which brings us back to that night in twenty twelve.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_b",
+  "src_start": 146.233469,
+  "dur": 2.194286
+ },
+ {
+  "i": 78,
+  "who": "J",
+  "text": "Kodak says it has been unable to sell about eleven hundred digital imaging patents in time to stay afloat.",
+  "voice": "EXAVITQu4vr4xnSDxMaL",
+  "src": "sarah",
+  "src_start": 8.620408,
+  "dur": 6.687347
+ },
+ {
+  "i": 79,
+  "who": "N",
+  "text": "Three weeks later, Kodak stops making digital cameras. Altogether.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_b",
+  "src_start": 148.427755,
+  "dur": 4.284082
+ },
+ {
+  "i": 80,
+  "who": "N",
+  "text": "And that photo-sharing site with seventy-five million users? Kodak sells it for twenty-three point eight million dollars.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_b",
+  "src_start": 152.711837,
+  "dur": 8.045714
+ },
+ {
+  "i": 81,
+  "who": "N",
+  "text": "The same spring, Facebook buys a photo-sharing app called Instagram, for one billion dollars. It has thirteen employees.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_b",
+  "src_start": 160.757551,
+  "dur": 7.706122
+ },
+ {
+  "i": 82,
+  "who": "Y",
+  "text": "Thirteen?",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_b",
+  "src_start": 168.463673,
+  "dur": 0.914286
+ },
+ {
+  "i": 83,
+  "who": "N",
+  "text": "And the patent on your camera? It ran out back in nineteen ninety-five.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_b",
+  "src_start": 169.377959,
+  "dur": 3.709388
+ },
+ {
+  "i": 84,
+  "who": "N",
+  "text": "Here's what makes it hurt. Kodak's rival, Fujifilm, was hit by the exact same storm. Its film business collapsed too.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_b",
+  "src_start": 173.087347,
+  "dur": 8.124082
+ },
+ {
+  "i": 85,
+  "who": "N",
+  "text": "But Fujifilm asked a different question. Not how do we save film, but what are we actually good at?",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_b",
+  "src_start": 181.211429,
+  "dur": 6.269388
+ },
+ {
+  "i": 86,
+  "who": "N",
+  "text": "The answer was chemistry. So it moved into medical imaging, materials, and even face cream. Over the decade film died, Fujifilm's revenue grew fifty-seven percent. Kodak's fell forty-eight.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_b",
+  "src_start": 187.480816,
+  "dur": 13.087347
+ },
+ {
+  "i": 87,
+  "who": "N",
+  "text": "So what really killed Kodak? Not stupidity. Not a lack of money. Not even a lack of ideas. Kodak invented the future.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_b",
+  "src_start": 200.568163,
+  "dur": 8.045714
+ },
+ {
+  "i": 88,
+  "who": "N",
+  "text": "It just couldn't stop protecting the past. Film paid too well to let go.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_b",
+  "src_start": 208.613878,
+  "dur": 4.284082
+ },
+ {
+  "i": 89,
+  "who": "N",
+  "text": "You lean back on the couch, and for some reason, you hear Joy's voice. Two words, from nineteen seventy-five.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_b",
+  "src_start": 212.897959,
+  "dur": 7.47102
+ },
+ {
+  "i": 90,
+  "who": "J",
+  "text": "Needs work.",
+  "voice": "EXAVITQu4vr4xnSDxMaL",
+  "src": "sarah",
+  "src_start": 15.307755,
+  "dur": 1.567347
+ },
+ {
+  "i": 91,
+  "who": "N",
+  "text": "She was talking about a photo. She could have been talking about Kodak.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_b",
+  "src_start": 220.36898,
+  "dur": 3.239184
+ },
+ {
+  "i": 92,
+  "who": "N",
+  "text": "In real life, that young engineer was named Steve Sasson. He built the first digital camera at twenty-four. And Kodak put it in a drawer.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_b",
+  "src_start": 223.608163,
+  "dur": 7.549388
+ },
+ {
+  "i": 93,
+  "who": "N",
+  "text": "So, what's in your drawer? The idea you're sitting on, because what you have right now feels too safe to risk? Tell me in the comments.",
+  "voice": "iP95p4xoKVk53GoZ742B",
+  "src": "chris_b",
+  "src_start": 231.157551,
+  "dur": 8.202449
+ }
+]
