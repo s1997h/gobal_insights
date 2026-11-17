@@ -136,7 +136,7 @@ const Rules: React.FC<P> = ({spec, p}) => {
   return (
     <g>
       {items.map((it, i) => {
-        const q = clamp((p - 0.05 - i * 0.15) * 6);
+        const q = clamp((p - ((spec.ats as number[] | undefined)?.[i] ?? 0.05 + i * 0.15)) * 6);
         if (q <= 0) return null;
         return (
           <g key={i} transform={`translate(0 ${(i - 1) * 170}) scale(${pop(q)}) rotate(${(i - 1) * -2})`}>
@@ -253,7 +253,7 @@ const Duo: React.FC<P> = ({spec, t, p}) => {
           const q = clamp((t - 0.6 - i * gapSec) * 3);
           return q > 0 ? (
             <g key={i} transform={`translate(${(i - 0.5) * 600} 30) scale(${pop(q)})`}>
-              <text x={0} y={30} textAnchor="middle" fontFamily={FONT} fontWeight={900} fontSize={170} fill={i === 0 ? RED : TEAL} stroke={INK} strokeWidth={8} paintOrder="stroke" letterSpacing={-4}>{c.big}</text>
+              <text x={0} y={30} textAnchor="middle" fontFamily={FONT} fontWeight={900} fontSize={Math.min(170, 540 / Math.max(1, c.big.length * 0.64))} fill={i === 0 ? RED : TEAL} stroke={INK} strokeWidth={8} paintOrder="stroke" letterSpacing={-4}>{c.big}</text>
               {wrap(c.label, 18).map((l, j) => (
                 <text key={j} x={0} y={110 + j * 50} textAnchor="middle" fontFamily={FONT} fontWeight={800} fontSize={42} fill={INK}>{l}</text>
               ))}
@@ -471,7 +471,7 @@ const Checklist: React.FC<P> = ({spec, p}) => {
     <g>
       <Card w={w} h={n * 130 + 90}>
         {items.map((it, i) => {
-          const at = 0.12 + i * (0.8 / n);
+          const at = (spec.ats as number[] | undefined)?.[i] ?? 0.12 + i * (0.8 / n);
           const q = clamp((p - at) * 8);
           const y = -((n - 1) * 130) / 2 + i * 130;
           return (
@@ -581,10 +581,14 @@ export const OverlayView: React.FC<P> = (props) => {
   if (!C) return null;
   const until = props.spec.until ?? 1.01;
   if (props.p > until) return null;
+  // `delay`: the card arrives partway through the shot (0..1), and animates from there
+  const delay = typeof props.spec.delay === 'number' ? (props.spec.delay as number) : 0;
+  if (props.p < delay) return null;
+  const local = delay > 0 ? {...props, t: props.t - delay * props.dur, p: (props.p - delay) / (1 - delay)} : props;
   const out = props.spec.until !== undefined ? clamp((until - props.p) * 12) : 1;
   return (
     <g transform={`translate(${cx(props.spec.pos)} 540)`} opacity={out}>
-      <C {...props} />
+      <C {...local} />
     </g>
   );
 };

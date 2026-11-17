@@ -1,0 +1,25 @@
+{
+ "durationSeconds": 22.151837,
+ "lines": [
+  {
+   "index": 0,
+   "startSeconds": 0,
+   "durationSeconds": 5.407347
+  },
+  {
+   "index": 1,
+   "startSeconds": 5.407347,
+   "durationSeconds": 4.362449
+  },
+  {
+   "index": 2,
+   "startSeconds": 9.769796,
+   "durationSeconds": 5.955918
+  },
+  {
+   "index": 3,
+   "startSeconds": 15.725714,
+   "durationSeconds": 6.426122
+  }
+ ]
+}

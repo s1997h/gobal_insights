@@ -87,6 +87,7 @@ class Narrator:
         self.fallbacks = [v for v in n.fallbacks if v != n.voice]
         if n.temperature is not None and hasattr(ctx.tts, "temperature"):
             ctx.tts.temperature = n.temperature
+        self.cast = dict(n.cast)  # role -> voice id; the painted look's other characters
         self.cache = ctx.cfg.root / "cache" / "tts"
         self.new_chars = 0
         self.spoke = False  # once a clip exists in one voice, the video never switches to another
@@ -94,7 +95,32 @@ class Narrator:
     def _price_key(self) -> str:
         return "azure_hd" if self.ctx.tts.name == "azure" and "HD" in self.voice else self.ctx.tts.name
 
-    def say(self, text: str) -> SynthResult:
+    def say(self, text: str, role: str = "narrator") -> SynthResult:
+        """Voice one line. `role` picks a cast voice (man, woman); the narrator reads anything else."""
+        voice = self.cast.get(role)
+        if voice:
+            try:
+                return self._say_as(text, voice)
+            except Exception as e:  # noqa: BLE001 - a broken cast voice should not stop the video
+                self.ctx.log(
+                    f"voice: {role} voice {voice} failed ({str(e)[:160]}); the narrator reads its lines"
+                )
+                self.cast.pop(role, None)
+        return self._say_narrator(text)
+
+    def _say_as(self, text: str, voice: str) -> SynthResult:
+        ctx = self.ctx
+        est = ctx.ledger.tts_cost(len(text), self._price_key())
+        if est > 0:
+            ctx.ledger.check_cap(est)
+        res = ctx.tts.synth(text, voice, self.rate, self.cache)
+        if not res.cached:
+            key = self._price_key()
+            ctx.ledger.record("tts", f"tts:{key}", float(len(text)), ctx.ledger.tts_cost(len(text), key))
+            self.new_chars += len(text)
+        return res
+
+    def _say_narrator(self, text: str) -> SynthResult:
         ctx = self.ctx
         est = ctx.ledger.tts_cost(len(text), self._price_key())
         if est > 0:
@@ -129,6 +155,28 @@ class Narrator:
         return res
 
 
+def mouths(shots: list[Shot], timing: dict[str, Any], words: list[dict[str, Any]]) -> list[Shot]:
+    """Give each shot whose line a character speaks (`spk`) a `speak` span: their mouth moves while it plays."""
+    for shot, span in zip(shots, timing["scenes"], strict=False):
+        if "spk" not in shot:
+            continue
+        a, b = span["start_ms"], span["end_ms"]
+        mine = [w for w in words if a <= w["start_ms"] < b]
+        if mine:
+            s, e = (mine[0]["start_ms"] - a) / 1000, (mine[-1]["end_ms"] - a) / 1000 + 0.05
+            shot["speak"] = [{"a": shot["spk"], "s": round(s, 3), "e": round(e, 3)}]
+    return shots
+
+
+def captions(words: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Voice word timings -> the long video's burnt-in captions (numbers as numerals), in seconds."""
+    from .caps import caption_tokens
+
+    return [
+        {"w": t["text"], "s": t["start_ms"] / 1000, "e": t["end_ms"] / 1000} for t in caption_tokens(words)
+    ]
+
+
 def _tail(shot: Shot, next_is_chapter: bool) -> float:
     if next_is_chapter:
         return TAIL_CHAPTER_END
@@ -151,7 +199,7 @@ def voice(
     offset = 0.0
     speech_ms = 0.0
     for i, shot in enumerate(shots):
-        res = narrator.say(shot["n"])
+        res = narrator.say(shot["n"], shot.get("voice", "narrator"))
         narrator.ctx.advance((i + 1) / len(shots))
         nxt = shots[i + 1]["id"] if i + 1 < len(shots) else None
         ms = max(res.duration_ms + _tail(shot, nxt in chapter_ids) * 1000, float(shot.get("min", 0)) * 1000)
@@ -214,6 +262,11 @@ def bundle(ctx: RunContext, work: Path) -> Path:
     (public / "fonts").mkdir(parents=True, exist_ok=True)
     for f in (ctx.cfg.root / "assets" / "fonts").glob("*.otf"):
         shutil.copyfile(f, public / "fonts" / f.name)
+    # the painted look's backgrounds (assets/backgrounds/<set>.jpg), served as bg/<set>.jpg
+    (public / "bg").mkdir(exist_ok=True)
+    for f in (ctx.cfg.root / "assets" / "backgrounds").glob("*.jpg"):
+        if not (public / "bg" / f.name).exists():
+            shutil.copyfile(f, public / "bg" / f.name)
     shutil.rmtree(out, ignore_errors=True)
     ctx.log("render: bundling the renderer ...")
     remotion(

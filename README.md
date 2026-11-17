@@ -146,6 +146,32 @@ A channel needs `config/channels/<id>.yaml`, a style file (voice, target length,
 `config/channels/<id>/backlog.md` (one `Title | angle` per line). An 8.5-minute episode with four Shorts takes
 about 50 minutes on 2 CPU cores and costs well under a dollar in model and voice calls.
 
+### The painted look (The If Lab's default)
+
+`look: painted` in the style file (config/styles/iflab.yaml) makes every episode the way "What If You Invented the
+Digital Camera and Kodak Hid It?" was made:
+
+- **The story puts the viewer inside it.** The narrator tells it as "you" ("You're twenty-three..."); it opens on
+  the ending (the news, years later), rewinds, and plays out as scenes where characters talk to you and you answer
+  back. A running gag (the drawer), a callback line, the real person's name revealed at the end, and a closing
+  question about the viewer's own life. `prompts/episode_painted.md` holds the recipe; the script must have at
+  least one spoken line in eight beats (`Beat.speaker`), and kids never speak.
+- **A cast of voices.** `narrator.voice` tells the story and plays "you"; `narrator.cast` gives the other
+  characters their voices (`man`: bosses, executives; `woman`: colleagues, news anchors). The If Lab uses the
+  ElevenLabs premade voices Chris, Bill and Sarah.
+- **Painted places, big-head characters who talk.** Nine painted backgrounds in `assets/backgrounds/` (lab, living,
+  conf, exec, shop, factory, office, startup, street); every set the model picks is drawn as the nearest of them.
+  The speaking character gets a close-up and their mouth moves while their line plays (from the voice's word
+  timings); long lines cut in partway through; cards and objects are drawn over the current place.
+- **Story objects:** napkin (a business model as four steps; `broken` crosses it out), drawer (what got hidden),
+  memo, old_tv (a photo painting in, with static for a face), prototype, news (an anchor reads the headline),
+  gadget (a product with a price tag), website (an app with a user count).
+- **Word-by-word captions** on the long video too, with numbers as digits, and a painted thumbnail.
+
+To add a place, put a 2048 x 1152 painting of it in `assets/backgrounds/<name>.jpg` (no people, no text, warm
+light, the floor in the lower third), add the name to `painted.BACKGROUNDS` and describe it in
+`schemas.PAINTED_GUIDE`. `look: flat` keeps the original flat-colour sets and a single narrator.
+
 ## Cartoon episodes (hand-directed)
 
 An episode is a shot list in `episodes/<name>/shots.py`: for every shot, the narration line, the set, actors with
@@ -166,12 +192,13 @@ re-voices only that shot. Rendering takes about 25 minutes for 8.5 minutes of vi
 
 | Provider | Sounds | Cost | Needs |
 |---|---|---|---|
-| `elevenlabs` | most human; exact word timings | Starter plan, about $6 a month for ~30 minutes (commercial licence) | `ELEVENLABS_API_KEY`, a voice id |
+| `elevenlabs` | most human, acts the lines; exact word timings | Starter $6 a month for 30,000 characters (about 3 episodes), Creator $22 for 121,000 (about 14); both include the commercial licence | `ELEVENLABS_API_KEY`, voice ids |
 | `openai` | natural, steerable with plain-English direction | about $0.015 a minute | `OPENAI_API_KEY` |
-| `azure` | natural; word timings | free tier 0.5M characters a month | `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION` |
+| `azure` | natural, flatter; word timings | free tier 0.5M characters a month of standard voices. HD voices: about $22-30 per million characters, not in the free tier, only in East US, West Europe and Southeast Asia | `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION` |
 | `kokoro` | good, a little flat | free, runs on the CPU | model files in `KOKORO_DIR` (links in `adapters/tts.py`) |
 
-Set the pipeline's voice with `tts.provider` in `config/models.yaml` and `narrator.voice` in the channel style.
+Set the engine with `narrator.provider` in the channel's style file (or `tts.provider` in `config/models.yaml` for
+every channel), and the voices with `narrator.voice` and `narrator.cast`.
 
 ## Project layout
 

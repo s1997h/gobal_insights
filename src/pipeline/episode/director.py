@@ -326,21 +326,36 @@ def _card(b: Beat) -> Shot:
     return s
 
 
-def direct(script: EpisodeScript, prefix: str = "b") -> tuple[list[Shot], list[list[str]]]:
-    """Beats -> (shots, chapters). Chapters are [shot id, title] pairs for YouTube and for pacing."""
+def direct(
+    script: EpisodeScript, prefix: str = "b", look: str = "flat"
+) -> tuple[list[Shot], list[list[str]]]:
+    """Beats -> (shots, chapters). Chapters are [shot id, title] pairs for YouTube and for pacing.
+
+    look "painted" draws every beat on a painted background with talking characters (episode/painted.py).
+    """
+    from . import painted as pt
+
     shots: list[Shot] = []
     chapters: list[list[str]] = []
     clock: str | None = None
+    place = pt.background(next((b.set for b in script.beats if b.view == "scene"), "office"))
     for i, b in enumerate(script.beats):
         sid = f"{prefix}{i + 1:03d}"
-        shot = _scene(b, i) if b.view == "scene" else _object(b) if b.view == "object" else _card(b)
+        if look == "painted":
+            new = pt.background(b.set) if b.view == "scene" else place
+            shot = pt.shot_for(b, i, new, new != place or i == 0)
+            place = new
+        else:
+            shot = _scene(b, i) if b.view == "scene" else _object(b) if b.view == "object" else _card(b)
         if b.clock is not None:
             clock = b.clock or None
         timeline = clock if not b.past and b.view != "end" else None
         shot = {"id": sid, "n": b.say, **shot}
         if timeline:
             shot["clock"] = timeline
-        if b.past:
+        if (
+            b.past and look != "painted"
+        ):  # painted places are already warm; sepia would turn the whole past brown
             shot["tod"] = "sepia"
         if b.where and b.view == "scene":
             shot["where"] = b.where[:28]
@@ -354,10 +369,10 @@ def direct(script: EpisodeScript, prefix: str = "b") -> tuple[list[Shot], list[l
     return shots, chapters
 
 
-def direct_hook(beat: Beat, sid: str) -> Shot:
+def direct_hook(beat: Beat, sid: str, look: str = "flat") -> Shot:
     """One extra shot for the start of a Short."""
     one = EpisodeScript.model_construct(promise="", payoff_beat=1, comment_prompt="", beats=[beat], claims=[])
-    shot = direct(one, prefix="h")[0][0]
+    shot = direct(one, prefix="h", look=look)[0][0]
     shot["id"] = sid
     shot.pop("tr", None)
     return shot

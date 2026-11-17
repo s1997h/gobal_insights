@@ -96,6 +96,20 @@ def sfx(name):
             b = 0.25 * lowpass(noise(0.05), 3000) * env_exp(int(0.05 * SR), 0.015)
             out[s : s + len(b)] += b
         return out
+    if name == "shutter":  # an old camera: a sharp click, a short mechanical rattle, a softer click
+        out = np.zeros(int(0.22 * SR))
+        for at, vol in ((0.0, 0.7), (0.012, 0.3), (0.1, 0.45)):
+            n = int(0.03 * SR)
+            b = vol * lowpass(noise(0.03), 5000) * env_exp(n, 0.006)
+            s0 = int(at * SR)
+            out[s0 : s0 + n] += b
+        return out
+    if name == "static":  # television snow
+        x = noise(1.1) * 0.22
+        e = np.minimum(1, np.arange(len(x)) / (0.05 * SR)) * np.minimum(
+            1, (len(x) - np.arange(len(x))) / (0.25 * SR)
+        )
+        return x * e
     if name == "chop":
         return (
             0.5 * lowpass(noise(0.08), 4000) * env_exp(int(0.08 * SR), 0.02)

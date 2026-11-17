@@ -107,8 +107,12 @@ class CaptionStyle(BaseModel):
 
 
 class Narrator(BaseModel):
-    provider: str = "azure"
+    # the voice engine for this channel; empty means config/models.yaml `tts.provider`
+    provider: str | None = None
     voice: str
+    # the painted look's other voices, by role: {"man": voice id, "woman": voice id}. A role without a voice
+    # is read by the narrator. Same engine as `voice`.
+    cast: dict[str, str] = Field(default_factory=dict)
     # tried in order, for the whole video, when `voice` fails (e.g. it does not exist in this Speech region)
     fallback_voice: str | list[str] | None = None
     rate: float = 1.0
@@ -149,6 +153,9 @@ class StoryShape(BaseModel):
 
 class StyleBible(BaseModel):
     palette: Palette
+    # painted: painted backgrounds, big-head characters who talk, captions, a cast of voices (the If Lab style).
+    # flat: the original flat-colour sets with one narrator.
+    look: Literal["flat", "painted"] = "flat"
     font: str = "Inter"
     captions: CaptionStyle = CaptionStyle()
     narrator: Narrator

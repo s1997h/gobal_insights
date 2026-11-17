@@ -252,6 +252,13 @@ const Sunbeam: React.FC<P> = ({t}) => (
   </g>
 );
 
+/** A camera flash: the frame goes white for a moment at `from`. Absolute. */
+const Flash: React.FC<P> = ({spec, p, dur}) => {
+  const local = (p - ((spec.from as number) ?? 0)) * dur;
+  const a = local < 0 ? 0 : Math.max(0, 1 - local / 0.35);
+  return <rect x={-300} y={-300} width={2520} height={1680} fill="#ffffff" opacity={a * 0.92} />;
+};
+
 const NoCamera: React.FC<P> = ({p}) => (
   <g>
     <Icon name="camera" size={170} />
@@ -316,6 +323,7 @@ export const FX: Record<string, React.FC<P>> = {
   checks: Checks,
   sunbeam: Sunbeam,
   no_camera: NoCamera,
+  flash: Flash,
 };
 
 export const FxView: React.FC<P> = (props) => {
@@ -327,7 +335,7 @@ export const FxView: React.FC<P> = (props) => {
   if (p < from || p > until) return null;
   const local = (p - from) * dur;
   const q = clamp(local * 5);
-  const absolute = ['confetti', 'birds', 'tumbleweed', 'sunbeam'].includes(spec.t) || spec.follow;
+  const absolute = ['confetti', 'birds', 'tumbleweed', 'sunbeam', 'flash'].includes(spec.t) || spec.follow;
   const x = absolute ? 0 : ((spec.x as number) ?? 960);
   const y = absolute ? 0 : ((spec.y as number) ?? 540);
   return (
