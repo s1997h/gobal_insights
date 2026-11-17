@@ -136,6 +136,12 @@ class Bar(BaseModel):
     text: str
 
 
+_META = re.compile(
+    r"\b(sources?\s*:|here are the facts|the facts we used|in this video|this video|subscribe|let's dive in)\b",
+    re.I,
+)
+
+
 class Beat(BaseModel):
     say: str = Field(min_length=1, description="The narration for this shot. One to three short sentences.")
     view: View
@@ -253,6 +259,19 @@ class Beat(BaseModel):
             p.append(f"beat {n}: `sign` is {len(self.sign)} characters; max 14")
         if self.clock and not re.fullmatch(r"(1[0-2]|[1-9]):[0-5]\d (AM|PM)", self.clock):
             p.append(f'beat {n}: clock {self.clock!r} must look like "9:30 AM"')
+        meta = _META.search(self.say)
+        if meta:
+            p.append(
+                f"beat {n} talks about the video or its sources ({meta.group(0)!r}). The story "
+                "never mentions itself; sources go in `claims` only"
+            )
+        if self.speaker in ("you", "you_old") and re.match(
+            r"(you|you're|your|you've)\b", self.say.strip().lower()
+        ):
+            p.append(
+                f"beat {n} is the narrator describing you, not words you say out loud: set speaker to narrator. "
+                'A spoken line is what a person says to someone in the scene, like "Using what?"'
+            )
         if self.speaker != "narrator":
             if self.speaker in ("kid_a", "kid_b"):
                 p.append(f"beat {n}: kids never speak; give the line to the narrator or an adult")
@@ -302,7 +321,15 @@ class EpisodeScript(BaseModel):
         for i, b in enumerate(self.beats, 1):
             p += b.problems(i)
         if painted:
-            talk = sum(1 for b in self.beats if b.speaker != "narrator")
+            talk = sum(
+                1
+                for b in self.beats
+                if b.speaker != "narrator"
+                and not (
+                    b.speaker in ("you", "you_old")
+                    and re.match(r"(you|you're|your)\b", b.say.strip().lower())
+                )
+            )
             want = max(4, len(self.beats) // 8)
             if talk < want:
                 p.append(
@@ -310,7 +337,7 @@ class EpisodeScript(BaseModel):
                     "(set `speaker` to someone in the scene) so the story plays out instead of being described"
                 )
         w = self.words()
-        if not 0.7 * target_words <= w <= 1.3 * target_words:
+        if not 0.85 * target_words <= w <= 1.25 * target_words:
             p.append(f"the script is {w} words; write about {target_words}")
         first = self.beats[0]
         if first.view not in ("scene", "object") or first.object == "mystery":

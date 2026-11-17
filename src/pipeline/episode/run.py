@@ -99,6 +99,29 @@ def _banned(script: EpisodeScript, phrases: list[str]) -> list[str]:
     return out
 
 
+# Lines from the worked example in prompts/episode_painted.md. Another story must invent its own.
+EXAMPLE_LINES = (
+    "what's in your drawer",
+    "needs work",
+    "that's cute",
+    "nice toaster",
+    "don't tell anyone about it",
+)
+
+
+def _copied(s: EpisodeScript, title: str) -> list[str]:
+    if "kodak" in title.lower():
+        return []
+    out = []
+    for i, b in enumerate(s.beats, 1):
+        hit = next((x for x in EXAMPLE_LINES if x in b.say.lower().replace("’", "'")), None)
+        if hit:
+            out.append(
+                f"beat {i} copies the Kodak example ({hit!r}). Invent a line, gag or question that belongs to this story"
+            )
+    return out
+
+
 def write_script(ctx: RunContext, topic: dict[str, Any], target: int) -> tuple[EpisodeScript, dict[str, Any]]:
     """Draft, audit, critique; rewrite with the fixes at most MAX_REWRITES times. Returns (script, gate report)."""
     p = ctx.paths
@@ -131,7 +154,7 @@ def write_script(ctx: RunContext, topic: dict[str, Any], target: int) -> tuple[E
     critic_system = render_prompt(ctx.cfg.root, "episode_critic", **common)
 
     def check(s: EpisodeScript) -> list[str]:
-        return (s.problems(target, painted) + _banned(s, ctx.style.banned_phrases))[:12]
+        return (s.problems(target, painted) + _banned(s, ctx.style.banned_phrases) + _copied(s, title))[:12]
 
     fixes: list[str] = []
     draft: EpisodeScript | None = None
@@ -146,6 +169,11 @@ def write_script(ctx: RunContext, topic: dict[str, Any], target: int) -> tuple[E
         if draft is not None:
             ask["YOUR LAST DRAFT"] = draft.model_dump(exclude_defaults=True)
             ask["REWRITE IT TO FIX ALL OF THESE"] = fixes
+            ask["HOW TO REWRITE"] = (
+                "Apply every fix above; where a fix gives replacement text, use it word for word. Keep the beats that "
+                f"work. The new draft must be about {target} words: if your last draft was short, add scenes and "
+                "spoken exchanges, never filler."
+            )
         ctx.advance((attempt - 1) / (MAX_REWRITES + 1))
         ctx.log(f"script: draft {attempt} ({target} words wanted)")
         draft = _generate(

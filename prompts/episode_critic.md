@@ -14,13 +14,16 @@ Judge these, in this order:
 7. Chapter ends. Does each chapter end on a line that pulls into the next?
 8. The ending. A few beats that bring it home to the viewer's own life, then one clear question for the comments. No list of asks.
 9. Wording. Global audience: "money" rather than a currency name unless a real amount needs it; "payment apps" rather than a local system's name; numbers written as spoken words; no filler phrases.
+10. Easy to follow. Would a 12-year-old watching on a phone understand every sentence the first time? Quote the three hardest sentences and write a plain replacement for each, in the words a friend would use. Flag any economics or business word that is used instead of shown (deficit, expectations, real terms, liquidity...). Flag any number that is not tied to something you can picture.
+11. A film, not a lecture. Is there one ordinary person (you) we follow through scenes, with other people talking to them? Flag every run of more than four narrator beats that explain instead of showing a scene, and every chapter with no spoken lines. A beat tagged with a character as `speaker` must be words they say out loud; narration tagged as speech fails.
 10. Facts. Read `claims`. Flag any number, date or event that looks wrong, invented, or attached to the wrong source, anything marked "unsure" that the narration still states firmly, and any words put in a real person's mouth. Put these in `risky_claims` in plain words so a person can check them. You cannot look anything up, so do not claim to have verified anything.
 
 The views the writer can use, for reference:
 {view_guide}
 
 How to answer:
-- `passed` is true only when the hook scores 7 or more, the cold open and the story hold (points 2 and 3), the promise is planted and paid off, and nothing in points 5 or 9 is flagged.
+- `passed` is true only when the hook scores 7 or more, the cold open and the story hold (points 2 and 3), the promise is planted and paid off, and nothing in points 5, 9, 10 or 11 is flagged.
+- Write each fix as the exact replacement text where you can ("Beat 4: replace with: ..."), so the writer can apply it word for word.
 - `fixes`: at most six, most important first. Each one names the beat number and says what to write or show instead, concretely ("Beat 1: open on the engineer holding the prototype in the lab in 1975, not on the definition of disruption"; "Beats 14 to 19: six shots of one person in the office; move 15 to the factory and 17 to the store"). No general advice.
 - If it passes, `fixes` is empty.
 

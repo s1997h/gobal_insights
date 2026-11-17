@@ -7,8 +7,9 @@ schedule:
   timezone: Asia/Kolkata
   long:  ["Sun 10:00"]                                          # one long video a week
   short: ["Wed 18:00", "Thu 18:00", "Fri 18:00", "Sat 18:00"]   # its four Shorts, one a day
-# Each video costs well under a dollar (script model + HD voice); these caps stop a runaway.
-budget: {per_video_usd: 2, per_month_usd: 10}
+# A video is about $2-3 here (ElevenLabs counted per character, ~$1.70; the script $0.20 on gpt-5-mini, ~$1 on
+# gpt-5). These caps stop a runaway, not normal use.
+budget: {per_video_usd: 4, per_month_usd: 25}
 # Cartoon episodes are drawn by code: no AI images, no image API key.
 visuals: {stills: false, hero_clips: false, max_stills_long: 0, max_stills_short: 0}
 destinations:
