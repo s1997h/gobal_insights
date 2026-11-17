@@ -181,8 +181,9 @@ class AzureOpenAILLM:
             "tool_choice": {"type": "function", "function": {"name": "submit"}},
             "max_completion_tokens": self.models.budget(step, "azure_openai"),
         }
-        if self.tiers.reasoning_effort:
-            kwargs["reasoning_effort"] = self.tiers.reasoning_effort
+        effort = self.tiers.effort(step)
+        if effort:
+            kwargs["reasoning_effort"] = effort
         try:
             return self.client.chat.completions.create(**kwargs)
         except openai.RateLimitError as e:

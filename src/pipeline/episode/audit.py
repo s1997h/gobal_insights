@@ -108,6 +108,60 @@ def hook_score(text: str) -> dict[str, int]:
     }
 
 
+# Words that make a viewer stop and translate. Each with what to say instead.
+JARGON = {
+    "deficit": "spending more than it had", "denomination": "bigger notes", "nominal": "on paper",
+    "nominally": "on paper", "real terms": "what the money buys", "expectations": "what people think will happen",
+    "hard currency": "dollars", "formal economy": "shops and offices", "monetary": "money", "fiscal": "budget",
+    "liquidity": "cash on hand", "issuance": "printing", "transactions": "payments", "institutions": "banks",
+    "insolvent": "out of money", "insolvency": "running out of money", "liabilities": "what it owed",
+    "leverage": "borrowed money", "valuation": "price tag", "stakeholders": "people involved", "synergy": "teamwork",
+    "macroeconomic": "the whole economy", "gdp": "everything the country makes", "yields": "interest",
+    "market share": "share of buyers", "paradigm": "way of doing things", "infrastructure": "roads and power",
+}  # fmt: skip
+_ABSTRACT = re.compile(r"\b[a-z]{4,}(?:tion|sion|ment|ity|ance|ence|ism)s?\b", re.I)
+
+
+def plain_english(script: EpisodeScript) -> dict[str, Any]:
+    """How easy the narration is to follow by ear: sentence length, abstract words, jargon."""
+    text = " ".join(b.say for b in script.beats)
+    words = re.findall(r"[A-Za-z0-9']+", text)
+    sentences = [x for x in re.split(r"[.!?]+", text) if x.split()]
+    abstract = _ABSTRACT.findall(text)
+    low = " " + re.sub(r"[^a-z ]", " ", text.lower()) + " "
+    jargon = [w for w in JARGON if f" {w} " in low]
+    long_ones = sorted((x.strip() for x in sentences), key=lambda x: -len(x.split()))[:3]
+    return {
+        "avg_words_per_sentence": round(len(words) / max(1, len(sentences)), 1),
+        "abstract_per_100_words": round(100 * len(abstract) / max(1, len(words)), 1),
+        "abstract_words": sorted(set(w.lower() for w in abstract))[:12],
+        "jargon": jargon,
+        "longest_sentences": long_ones,
+    }
+
+
+def plain_fixes(m: dict[str, Any]) -> list[str]:
+    fixes: list[str] = []
+    if m["jargon"]:
+        swaps = "; ".join(f"'{w}' (say '{JARGON[w]}')" for w in m["jargon"][:5])
+        fixes.append(
+            f"These words make a viewer stop and translate: {swaps}. Say it the way you'd tell a friend, "
+            "or show it happening in a scene."
+        )
+    if m["abstract_per_100_words"] > 3.0:
+        fixes.append(
+            f"Too many abstract words ({', '.join(m['abstract_words'][:8])}). Swap each for something you can "
+            "see: not 'prices rise with expectations' but 'the baker writes a new price on the bread every "
+            "morning'. A 12-year-old should follow every sentence."
+        )
+    if m["avg_words_per_sentence"] > 9:
+        fixes.append(
+            f"Sentences average {m['avg_words_per_sentence']} words; aim for about 8 (the Kodak video averaged 6). "
+            f"Split these: {' | '.join(m['longest_sentences'])}"
+        )
+    return fixes
+
+
 def audit(script: EpisodeScript) -> dict[str, Any]:
     """Metrics plus `fixes`: plain-language rewrites to ask the writer for. No fixes means the gate is passed."""
     beats = script.beats
@@ -208,10 +262,9 @@ def audit(script: EpisodeScript) -> dict[str, Any]:
         fixes.append(
             "This reads as a list of facts. Join the beats as cause and effect: each one should follow from the last with a 'but' or a 'so', not an 'and then'."
         )
-    if m["avg_words_per_sentence"] > 15:
-        fixes.append(
-            f"Sentences average {m['avg_words_per_sentence']} words, too long to speak well. Break them up; mix three-word sentences with longer ones."
-        )
+    plain = plain_english(script)
+    m["plain_english"] = plain
+    fixes += plain_fixes(plain)
     if m["stiff_phrases"] > max(2, total // 150):
         fixes.append(
             f'{m["stiff_phrases"]} phrases are written for the page ("do not", "it is", "you are"). Use the contractions people say out loud: don\'t, it\'s, you\'re.'

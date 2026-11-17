@@ -135,3 +135,27 @@ def test_mouths_move_only_while_the_line_plays() -> None:
     assert "speak" not in shots[1]
     caps = produce.captions(words)
     assert caps[0] == {"w": "Could", "s": 0.2, "e": 0.5}
+
+
+def test_hard_scripts_are_sent_back_in_plain_words() -> None:
+    from pipeline.episode.audit import audit
+
+    beats = [
+        Beat(say="The deficit grew, so issuance rose and expectations shifted in real terms across institutions.", view="scene", set="office", people=[{"who": "boss"}]),
+        Beat(say="You walk to the shop and pay.", view="scene", set="shop", speaker="you", people=[{"who": "you"}]),
+        Beat(say="Here are the facts we used so you can see them clearly.", view="title", label="Facts"),
+    ]  # fmt: skip
+    s = EpisodeScript.model_construct(promise="", payoff_beat=1, comment_prompt="", beats=beats, claims=[])
+    fixes = " ".join(audit(s)["fixes"])
+    assert "'deficit' (say 'spending more than it had')" in fixes
+    probs = " ".join(p for b in beats for p in b.problems(beats.index(b) + 1))
+    assert "set speaker to narrator" in probs and "talks about the video" in probs
+
+
+def test_another_story_cannot_reuse_the_kodak_lines() -> None:
+    from pipeline.episode.run import _copied
+
+    beats = [Beat(say="So, what's in your drawer?", view="end", label="Next")]
+    s = EpisodeScript.model_construct(promise="", payoff_beat=1, comment_prompt="", beats=beats, claims=[])
+    assert _copied(s, "What If a Country Printed More Money?")
+    assert not _copied(s, "What If You Invented the Digital Camera and Kodak Hid It?")

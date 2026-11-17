@@ -60,8 +60,8 @@ def test_forced_function_call_and_cost(cfg: AppConfig, sf: Any) -> None:
     sent = client.calls[0]
     assert sent["model"] == "gpt-5-mini"
     assert sent["tool_choice"] == {"type": "function", "function": {"name": "submit"}}
-    assert sent["reasoning_effort"] == "low"
-    assert sent["max_completion_tokens"] == 12000  # the azure_openai override for critic
+    assert sent["reasoning_effort"] == "medium"  # per step: the critic thinks harder than topic/package
+    assert sent["max_completion_tokens"] == 16000  # the azure_openai override for critic
     assert sent["messages"][0] == {"role": "system", "content": "sys"}
     # 1000 in at $0.25/M + 500 out at $2/M
     assert llm.ledger.spent_run() == pytest.approx(0.00125)

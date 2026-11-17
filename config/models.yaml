@@ -13,11 +13,13 @@ llm:
     # (500K tokens per minute) but none for gpt-5-nano. Its deployment needs at least 50K TPM.
     strong: gpt-5-mini
     small: gpt-5-mini
-    # GPT-5-family models reason before answering. Delete this line for models that don't
-    # (gpt-4.1, DeepSeek-V3, Llama), or the request is rejected.
-    reasoning_effort: low
+    # GPT-5-family models reason before answering; delete these lines for models that don't
+    # (gpt-4.1, DeepSeek-V3, Llama), or the request is rejected. The story is the hard part: at "low"
+    # gpt-5-mini writes a lecture and ignores the critic's fixes, so the script thinks hard and the rest
+    # stays cheap (a whole episode is still a few US cents on gpt-5-mini).
+    reasoning_effort: {script: high, critic: medium, shorts: medium, default: low}
     # Reasoning tokens count toward the limit, so allow more than Claude needs.
-    max_tokens: {script: 32000, critic: 12000, topic: 6000, package: 6000, shorts: 10000}
+    max_tokens: {script: 64000, critic: 16000, topic: 6000, package: 6000, shorts: 16000}
 tts:
   provider: azure               # azure | elevenlabs (most human) | openai | kokoro (free, local) | fake
 image:
